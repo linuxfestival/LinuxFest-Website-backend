@@ -1,0 +1,5 @@
+node_modules
+.vscode
+mongodb
+mongodb-data
+config
