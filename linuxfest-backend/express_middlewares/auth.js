@@ -1,24 +1,26 @@
-const express = require('express');
 const SuperUser = require('../src/models/SuperUser');
 const jwt = require('jsonwebtoken');
 
 async function authenticateCreateAdmin(req, res, next) {
     try {
-        console.log((await SuperUser.find()).length);
+        console.log("Number of admins: ", (await SuperUser.find()).length);
         const superManPermissions = [
+            { permission: "getUser" },
             { permission: "addUser" },
             { permission: "editUser" },
             { permission: "deleteUser" },
+            { permission: "getWorkshop" },
             { permission: "addWorkshop" },
             { permission: "editWorkshop" },
             { permission: "deleteWorkshop" },
+            { permission: "getTeacher" },
             { permission: "addTeacher" },
             { permission: "editTeacher" },
             { permission: "deleteTeacher" },
+            { permission: "getAdmin" },
             { permission: "addAdmin" },
             { permission: "editAdmin" },
-            { permission: "deleteAdmin" },
-            { permission: "getAdmin" }
+            { permission: "deleteAdmin" }
         ];
 
         if ((await SuperUser.find()).length === 0) {
@@ -35,11 +37,8 @@ async function authenticateCreateAdmin(req, res, next) {
             }
         } else {
             await authenticateAdmin(req, res, () => {
-                const permissions = req.body.admin.permissions.map((element) => { return { permission: element } }).concat({ permission: "getAdmin" });
-                console.log(permissions);
-
                 const admin = new SuperUser({
-                    permissions
+                    permissions: req.body.admin.permissions
                 });
                 req.newAdmin = admin;
 
@@ -55,16 +54,15 @@ async function authenticateAdmin(req, res, next) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!req.body.operation) {
-            req.body.operation = 'getAdmin';
-        }
-        const admin = await SuperUser.findOne({ _id: decoded._id, 'tokens.token': token, 'permissions.permission': req.body.operation });
+        const admin = await SuperUser.findOne({ _id: decoded._id, 'tokens.token': token });
 
         if (!admin) {
             throw new Error();
         }
 
+        // eslint-disable-next-line require-atomic-updates
         req.token = token;
+        // eslint-disable-next-line require-atomic-updates
         req.admin = admin;
 
         next();
