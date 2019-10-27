@@ -6,7 +6,7 @@ const SuperUser = require('../models/SuperUser');
 const {
     authenticateCreateAdmin,
     authenticateAdmin
-} = require('../../express_middlewares/auth');
+} = require('../../express_middlewares/adminAuth');
 
 
 const router = new express.Router();
