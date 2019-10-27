@@ -3,3 +3,4 @@ node_modules
 mongodb
 mongodb-data
 config
+.eslintrc.json
