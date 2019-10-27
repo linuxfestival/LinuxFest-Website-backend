@@ -75,12 +75,11 @@ async function authenticateAdmin(req, res, next) {
     if (await authCheckAdmin(req)) {
         next();
     } else {
-        res.status(401).send({ error: 'Please authenticate.' });
+        res.status(401).send({ error: 'Please authenticate as admin' });
     }
 }
 
 module.exports = {
     authenticateCreateAdmin,
     authenticateAdmin,
-    authCheckAdmin
 };

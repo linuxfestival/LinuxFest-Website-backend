@@ -1,5 +1,4 @@
 const express = require('express');
-const validator = require('validator');
 
 const { baseURL } = require('../utils/consts');
 const SuperUser = require('../models/SuperUser');
@@ -51,6 +50,28 @@ router.post(baseAdminUrl + '/login', async (req, res) => {
         res.send({ admin, token });
     } catch (err) {
         res.status(400).send({ error: err.message });
+    }
+});
+
+router.post(baseAdminUrl + '/logout', authenticateAdmin, async (req, res) => {
+    try {
+        req.admin.tokens = req.admin.tokens.filter((token) => token.token !== req.token);
+        await req.admin.save();
+
+        res.send();
+    } catch (err) {
+        res.status(500).send();
+    }
+});
+
+router.post(baseAdminUrl + '/logoutall', authenticateAdmin, async (req, res) => {
+    try {
+        req.admin.tokens = [];
+        await req.admin.save();
+
+        res.send();
+    } catch (err) {
+        res.status(500).send();
     }
 });
 
