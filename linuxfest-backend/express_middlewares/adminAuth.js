@@ -50,14 +50,14 @@ async function authenticateCreateAdmin(req, res, next) {
     }
 }
 
-async function authenticateAdmin(req, res, next) {
+async function authCheckAdmin(req) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const admin = await SuperUser.findOne({ _id: decoded._id, 'tokens.token': token });
 
         if (!admin) {
-            throw new Error();
+            return false;
         }
 
         // eslint-disable-next-line require-atomic-updates
@@ -65,13 +65,22 @@ async function authenticateAdmin(req, res, next) {
         // eslint-disable-next-line require-atomic-updates
         req.admin = admin;
 
-        next();
+        return true;
     } catch (err) {
+        return false;
+    }
+}
+
+async function authenticateAdmin(req, res, next) {
+    if (await authCheckAdmin(req)) {
+        next();
+    } else {
         res.status(401).send({ error: 'Please authenticate.' });
     }
 }
 
 module.exports = {
     authenticateCreateAdmin,
-    authenticateAdmin
+    authenticateAdmin,
+    authCheckAdmin
 };

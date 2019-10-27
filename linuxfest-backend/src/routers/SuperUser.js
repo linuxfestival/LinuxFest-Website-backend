@@ -3,6 +3,7 @@ const validator = require('validator');
 
 const { baseURL } = require('../utils/consts');
 const SuperUser = require('../models/SuperUser');
+const { checkPermission } = require('../utils/utils');
 const {
     authenticateCreateAdmin,
     authenticateAdmin
@@ -11,19 +12,6 @@ const {
 
 const router = new express.Router();
 const baseAdminUrl = baseURL + '/almightyone';
-
-function checkPermission(admin, perm, res) {
-
-    console.log(admin.permissions.filter(permission => permission.permission === perm));
-
-
-    if (!admin.permissions.filter(permission => permission.permission === perm).length) {
-        res.status(400).send({ error: "You don't have permission to do that" });
-        return false;
-    } else {
-        return true;
-    }
-}
 
 
 router.post(baseAdminUrl, authenticateCreateAdmin, async (req, res) => {
@@ -124,7 +112,7 @@ router.delete(baseAdminUrl + '/admin/:id', authenticateAdmin, async (req, res) =
             return;
         }
         const admin = await SuperUser.findById(req.params.id);
-        if(!admin){
+        if (!admin) {
             res.status(404).send();
         }
         await SuperUser.deleteOne(admin);
