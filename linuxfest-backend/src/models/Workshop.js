@@ -10,9 +10,12 @@ const schema = mongoose.Schema({
         required: true,
         trim: true
     },
+    isRegOpen: {
+        type: Boolean,
+        default: false
+    },
     picPath: {
-        type: String,
-        required: true
+        type: String
     },
     album: [{
         albumPicPath: {
@@ -20,14 +23,15 @@ const schema = mongoose.Schema({
         }
     }],
     description: {
-        type: String
-    }
-});
-
-schema.virtual('teachers', {
-    ref: 'Teacher',
-    localField: '_id',
-    foreignField: 'workshops.workshop'
+        type: String,
+        required: true
+    },
+    teachers: [{
+        teacher: {
+            type: mongoose.Types.ObjectId,
+            required: true
+        }
+    }]
 });
 
 schema.virtual('participants', {

@@ -5,5 +5,6 @@ app.use(express.json());
 
 app.use(require('./routers/user'));
 app.use(require('./routers/superuser'));
+app.use(require('./routers/workshop'));
 
 module.exports = app;

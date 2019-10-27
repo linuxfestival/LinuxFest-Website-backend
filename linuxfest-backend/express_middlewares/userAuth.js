@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../src/models/User');
 
-async function autCheckUser(req) {
+async function authCheckUser(req) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -11,9 +11,11 @@ async function autCheckUser(req) {
             return false;
         }
 
+        // eslint-disable-next-line require-atomic-updates
         req.token = token;
+        // eslint-disable-next-line require-atomic-updates
         req.user = user;
-        return true
+        return true;
     } catch (error) {
         return false;
     }

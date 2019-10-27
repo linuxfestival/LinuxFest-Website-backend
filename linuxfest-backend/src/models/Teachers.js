@@ -5,23 +5,23 @@ const schema = mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        trim = true
+        trim: true
     },
     description: {
         type: String
     },
     imagePath: {
         type: String
-    },
-    workshops: [{
-        workshop: {
-            type: mongoose.Types.ObjectId,
-            required: true
-        }
-    }]
-},{
+    }
+}, {
     timestamps: true
 });
+
+schema.virtual('workshops', {
+    ref: 'Workshop',
+    foreignField: 'teachers.teacher',
+    localField: '_id'
+})
 
 const Teacher = new mongoose.model('Teacher', schema);
 

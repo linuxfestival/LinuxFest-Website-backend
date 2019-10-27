@@ -25,6 +25,7 @@ async function createUser(req, res) {
 router.post('/users', async (req, res) => {
     await createUser(req, res);
 });
+
 router.post('/users/ac', authenticateAdmin, async (req, res) => {
     if (!checkPermision(req.admin, "addUser", res)) {
         return;
@@ -104,8 +105,7 @@ router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res);
 });
 
-
-async function userDelete(user, req, res){
+async function userDelete(user, req, res) {
     try {
         await User.deleteOne(user);
         user.save();
