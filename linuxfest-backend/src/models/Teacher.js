@@ -19,8 +19,8 @@ const schema = mongoose.Schema({
 
 schema.virtual('workshops', {
     ref: 'Workshop',
-    foreignField: 'teachers.teacher',
-    localField: '_id'
+    localField: '_id',
+    foreignField: 'teachers.teacher'
 })
 
 const Teacher = new mongoose.model('Teacher', schema);

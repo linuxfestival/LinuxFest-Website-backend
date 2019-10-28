@@ -30,10 +30,18 @@ router.get(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
         if (!checkPermission(req.admin, 'getWorkshop', res)) {
             return;
         }
-
         const workshops = await Workshop.find({});
-        await workshops.forEach(async workshop => await workshop.populate('participants').execPopulate());
-        res.send(workshops);
+
+        let result = [];
+        for (const workshop of workshops) {
+            await workshop.populate('participants').execPopulate()
+            result = result.concat({
+                workshop,
+                participants: workshop.participants
+            });
+        }
+        
+        res.send(result);
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -53,7 +61,7 @@ router.get(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) 
 
         await workshop.populate('participants').execPopulate();
 
-        res.send(workshop);
+        res.send({ workshop, participants: workshop.participants });
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -84,6 +92,23 @@ router.patch(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
+});
+
+router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'deleteWorkshop', res)) {
+        return;
+    }
+
+    const workshop = await Workshop.findById(req.params.id);
+    if (!workshop) {
+        res.status(404).send();
+        return;
+    }
+
+    await Workshop.deleteOne(workshop);
+    await workshop.save();
+
+    res.send(workshop);
 });
 
 module.exports = router;
