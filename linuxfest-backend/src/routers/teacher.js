@@ -165,7 +165,7 @@ router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainP
     } catch (error) {
         res.status(500).send({ error: error.message });
     }
-}, (err, req, res, next) => {
+}, (err, req, res) => {
     res.status(400).send({ error: err.message });
 });
 

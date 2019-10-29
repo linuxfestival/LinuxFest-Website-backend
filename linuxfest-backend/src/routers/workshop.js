@@ -173,7 +173,7 @@ router.post(baseWorkshopUrl + '/pic/album/:id', authenticateAdmin, upload.array(
     } catch (error) {
         res.status(500).send({ error: error.message });
     }
-}, (err, req, res, next) => {
+}, (err, req, res) => {
     res.status(400).send({ error: err.message });
 });
 
@@ -188,9 +188,6 @@ router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, asyn
             res.status(404).send();
             return;
         }
-        
-
-        
         
         fs.unlinkSync(path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
             if(err){
