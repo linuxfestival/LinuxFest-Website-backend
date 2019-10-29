@@ -5,3 +5,4 @@ mongodb-data
 config
 .eslintrc.json
 uploads
+*.orig
