@@ -8,10 +8,6 @@ function checkPermission(admin, perm, res) {
     }
 }
 
-function createRequiedDir(path){
-    
-}
-
 module.exports = {
     checkPermission
 }

@@ -3,7 +3,12 @@ const mongoose = require('mongoose');
 const schema = mongoose.Schema({
     capacity: {
         type: Number,
-        required: true
+        required: true,
+        validate(value) {
+            if (value < 0) {
+                throw new Error('ظرفیت نمیتواند منفی باشد');
+            }
+        }
     },
     title: {
         type: String,
