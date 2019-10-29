@@ -4,3 +4,4 @@ mongodb
 mongodb-data
 config
 .eslintrc.json
+uploads

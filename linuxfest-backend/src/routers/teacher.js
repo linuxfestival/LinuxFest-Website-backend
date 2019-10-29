@@ -144,7 +144,7 @@ router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainP
         }
 
         const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
-        const filePath = path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "teachers", req.params.id));
+        const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "teachers", req.params.id));
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -167,6 +167,35 @@ router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainP
     }
 }, (err, req, res) => {
     res.status(400).send({ error: err.message });
+});
+
+router.delete(baseTeacherUrl + '/pic/:id', authenticateAdmin, async (req, res) =>{
+    if (!checkPermission(req.admin, 'editTeacher', res)) {
+        return;
+    }
+
+    try{
+
+        const teacher = Teacher.findById(req.params.id);
+        if(!teacher){
+            res.status(404).send();
+            return;
+        }
+
+        fs.unlink(path.resolve(path.join("../uploads", process.env.SITE_VERSION, "teachers", req.params.id, "mainPic.png"), (err) =>{
+            if(err){
+                throw new Error(err);
+            }
+        }));
+
+        teacher.imagePath = '';
+
+        await teacher.save();
+
+        res.send(teacher);
+    }catch(err){
+        res.status(500).send();
+    }
 });
 
 module.exports = router;

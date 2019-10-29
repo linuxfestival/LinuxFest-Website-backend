@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
 const { checkPermission } = require('../utils/utils');
-const { authenticateAdmin } = require('../express_middlewares/adminAuth');
+const { authenticateAdmin } = require('../../express_middlewares/adminAuth');
 
 const router = new express.Router();
 const baseWorkshopUrl = baseURL + '/workshops';
@@ -144,7 +144,7 @@ router.post(baseWorkshopUrl + '/pic/album/:id', authenticateAdmin, upload.array(
 
         for (const file of req.files) {
             const buffer = await sharp(file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
-            const filePath = path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album"));
+            const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album"));
 
             if (!fs.existsSync(filePath)) {
                 fs.mkdirSync(filePath, { recursive: true }, (err) => {
@@ -188,9 +188,9 @@ router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, asyn
             res.status(404).send();
             return;
         }
-        
-        fs.unlinkSync(path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
-            if(err){
+
+        fs.unlinkSync(path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
+            if (err) {
                 throw new Error(err);
             }
         });
@@ -203,6 +203,71 @@ router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, asyn
         res.send(workshop);
     } catch (error) {
         res.status(500).send({ error: error.message });
+    }
+});
+
+router.post(baseWorkshopUrl + '/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+    try {
+        const workshop = await Workshop.findById(req.params.id);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+
+        const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
+        const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id));
+        if (!fs.existsSync(filePath)) {
+            fs.mkdirSync(filePath, { recursive: true }, (err) => {
+                if (err) {
+                    throw new Error(err);
+                }
+            });
+        }
+        fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
+            if (err) {
+                throw new Error(err);
+            }
+        });
+
+        workshop.picPath = path.join(filePath, "mainPic.png");
+        await workshop.save();
+
+        res.send(workshop);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+}, (err, req, res) => {
+    res.status(400).send({ error: err.message });
+});
+
+router.delete(baseWorkshopUrl + '/pic/:id', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+
+    try {
+        const workshop = await Workshop.findById(req.params.id);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+
+        fs.unlink(path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "mainPic.png")), (err) => {
+            if (err) {
+                throw new Error(err);
+            }
+        });
+
+        workshop.picPath = '';
+        await workshop.save();
+
+        res.send(workshop);
+
+    } catch (err) {
+        res.status(500).send({ error: err.message });
     }
 });
 
