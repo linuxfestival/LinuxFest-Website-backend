@@ -1,11 +1,19 @@
 const mongoose = require('mongoose');
+const persianize = require('persianize');
 
 const schema = mongoose.Schema({
     fullName: {
         type: String,
         required: true,
         unique: true,
-        trim: true
+        trim: true,
+        validate(values) {
+            for (const value of values.split(' ')) {
+                if (!persianize.validator().alpha(value)) {
+                    throw new Error('نام معتبر نمیباشد')
+                }
+            }
+        }
     },
     description: {
         type: String
