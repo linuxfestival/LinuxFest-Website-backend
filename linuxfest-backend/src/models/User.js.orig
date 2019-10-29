@@ -2,7 +2,11 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+<<<<<<< HEAD
+const persianize = require('persianize');
+=======
 const persianize = require("persianize");
+>>>>>>> 51f737fb53cb37b7da7f1024b934349a57bac525
 
 const schema = new mongoose.Schema({
   firstName: {
@@ -10,8 +14,13 @@ const schema = new mongoose.Schema({
     required: true,
     trim: true,
     validate(value) {
+<<<<<<< HEAD
+      if (!persianize.validator().alpha(value)) {
+        throw new Error('نام معتبر نمیباشد');
+=======
       if(!persianize.validator().alpha(value)){
         throw new Error('نام معتبر نمیباشد')
+>>>>>>> 51f737fb53cb37b7da7f1024b934349a57bac525
       }
     }
   },
@@ -20,8 +29,13 @@ const schema = new mongoose.Schema({
     required: true,
     trim: true,
     validate(value) {
+<<<<<<< HEAD
+      if (!persianize.validator().alpha(value)) {
+        throw new Error('نام خانوادگی معتبر نمیباشد');
+=======
       if(!persianize.validator().alpha(value)){
         throw new Error('نام خانوادگی معتبر نمیباشد')
+>>>>>>> 51f737fb53cb37b7da7f1024b934349a57bac525
       }
     }
   },
@@ -58,17 +72,17 @@ const schema = new mongoose.Schema({
   workshops: [{
     workshop: {
       type: mongoose.Types.ObjectId,
-      required: true  
+      required: true
     }
   }]
-},{
+}, {
   timestamps: true
 });
 
 
 
 schema.statics.findByCredentials = async function (email, password) {
-  const user = await User.findOne({email});
+  const user = await User.findOne({ email });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     throw new Error("اطلاعات واردشده معتبر نمی‌باشد");
