@@ -6,7 +6,7 @@ const { checkPermission } = require('../utils/utils');
 const {
     authenticateCreateAdmin,
     authenticateAdmin
-} = require('../../express_middlewares/adminAuth');
+} = require('../express_middlewares/adminAuth');
 
 
 const router = new express.Router();

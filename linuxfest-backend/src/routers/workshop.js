@@ -3,7 +3,7 @@ const express = require('express');
 const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
 const { checkPermission } = require('../utils/utils');
-const { authenticateAdmin } = require('../../express_middlewares/adminAuth');
+const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 const router = new express.Router();
 const baseWorkshopUrl = baseURL + '/workshops';

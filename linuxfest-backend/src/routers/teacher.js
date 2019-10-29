@@ -3,7 +3,7 @@ const express = require('express');
 const { baseURL } = require('../utils/consts');
 const Teacher = require('../models/Teacher');
 const { checkPermission } = require('../utils/utils');
-const { authenticateAdmin } = require('../../express_middlewares/adminAuth');
+const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 const router = new express.Router();
 const baseTeacherUrl = baseURL + '/teachers';
