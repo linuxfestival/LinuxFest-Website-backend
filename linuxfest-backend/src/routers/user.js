@@ -1,6 +1,6 @@
 const express = require('express');
 const User = require('../models/User');
-const auth = require('../../express_middlewares/userAuth');
+const auth = require('../express_middlewares/userAuth');
 const { checkPermision } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
