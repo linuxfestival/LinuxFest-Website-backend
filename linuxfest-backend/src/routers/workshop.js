@@ -1,9 +1,13 @@
 const express = require('express');
+const multer = require('multer');
+const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
 const { checkPermission } = require('../utils/utils');
-const { authenticateAdmin } = require('../express_middlewares/adminAuth');
+const { authenticateAdmin } = require('../../express_middlewares/adminAuth');
 
 const router = new express.Router();
 const baseWorkshopUrl = baseURL + '/workshops';
@@ -40,7 +44,7 @@ router.get(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
                 participants: workshop.participants
             });
         }
-        
+
         res.send(result);
     } catch (err) {
         res.status(500).send({ error: err.message });
@@ -109,6 +113,63 @@ router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, re
     await workshop.save();
 
     res.send(workshop);
+});
+
+//Upload image endpoints
+const upload = multer({
+    limits: {
+        fileSize: 10000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+            return cb(new Error('لطفا یک عکس را آپلود کنید'))
+        }
+        cb(undefined, true)
+    }
+
+});
+
+router.post(baseWorkshopUrl + '/pic:id', authenticateAdmin, upload.single('pic'), async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+    try {
+
+        const workshop = await Workshop.findById(req.params.id);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+
+        const buffer = await sharp(req.file.buffer).resize({ width: 1980, height: 960 }).png().toBuffer();
+
+        const filePath = path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id));
+
+        if (!fs.existsSync(filePath)) {
+            fs.mkdirSync(filePath, { recursive: true }, (err) => {
+                if (err) {
+                    throw new Error(err);
+                }
+            });
+        }
+
+        fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
+            if (err) {
+                throw new Error(err);
+            }
+        });
+
+        workshop.picPath = path.join(filePath, "mainPic.png");
+
+        await workshop.save();
+
+        res.send(workshop);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+
+}, (err, req, res) => {
+    res.status(400).send({ error: err.message });
 });
 
 module.exports = router;
