@@ -1,4 +1,4 @@
-const SuperUser = require('../src/models/SuperUser');
+const SuperUser = require('../models/SuperUser');
 const jwt = require('jsonwebtoken');
 
 async function authenticateCreateAdmin(req, res, next) {
