@@ -169,4 +169,32 @@ router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainP
     res.status(400).send({ error: err.message });
 });
 
+router.delete(baseTeacherUrl + '/pic/:id', authenticateAdmin, async (req, res) =>{
+    if (!checkPermission(req.admin, 'editTeacher', res)) {
+        return;
+    }
+
+    try{
+
+        const teacher = Teacher.findById(req.params.id);
+        if(!teacher){
+            res.status(404).send();
+            return;
+        }
+
+        fs.unlink(path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "teachers", req.params.id, "mainPic.png"), (err) =>{
+            if(err){
+                throw new Error(err);
+            }
+        }));
+
+        teacher.imagePath = '';
+
+        await teacher.save();
+
+        res.send(teacher);
+    }catch(err){
+        res.status(500).send();
+    }
+});
 module.exports = router;

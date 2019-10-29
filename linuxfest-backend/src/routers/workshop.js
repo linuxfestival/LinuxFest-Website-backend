@@ -1,8 +1,14 @@
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
+<<<<<<< HEAD
 const path = require('path');
 const fs = require('fs');
+=======
+const mongoose = require('mongoose');
+>>>>>>> 669bd846649ecb27346a61185b8265ae4f2d094b
 
 const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
@@ -115,36 +121,109 @@ router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, re
     res.send(workshop);
 });
 
-//Upload image endpoints
+
+//Upload file endpoint(s)
 const upload = multer({
     limits: {
         fileSize: 10000000
     },
     fileFilter(req, file, cb) {
         if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
-            return cb(new Error('لطفا یک عکس را آپلود کنید'))
+            cb(new Error('لطفا تصویر آپلود کنید'));
         }
-        cb(undefined, true)
+        cb(undefined, true);
     }
-
 });
 
-router.post(baseWorkshopUrl + '/pic:id', authenticateAdmin, upload.single('pic'), async (req, res) => {
+router.post(baseWorkshopUrl + '/pic/album/:id', authenticateAdmin, upload.array('pictures'), async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
-    try {
 
+    try {
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop) {
             res.status(404).send();
             return;
         }
 
-        const buffer = await sharp(req.file.buffer).resize({ width: 1980, height: 960 }).png().toBuffer();
+        for (const file of req.files) {
+            const buffer = await sharp(file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
+            const filePath = path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album"));
 
+            if (!fs.existsSync(filePath)) {
+                fs.mkdirSync(filePath, { recursive: true }, (err) => {
+                    if (err) {
+                        throw new Error(err);
+                    }
+                });
+            }
+
+            const picId = new mongoose.Types.ObjectId();
+            fs.writeFileSync(path.join(filePath, picId.toHexString() + ".png"), buffer, (err) => {
+                if (err) {
+                    throw new Error(err);
+                }
+            });
+
+            workshop.album = workshop.album.concat({
+                _id: picId,
+                albumPicPath: path.join(filePath, picId.toHexString() + ".png")
+            });
+        }
+
+        await workshop.save();
+
+        res.send(workshop);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+}, (err, req, res, next) => {
+    res.status(400).send({ error: err.message });
+});
+
+router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+
+    try {
+        const workshop = await Workshop.findOne({ _id: req.params.id, 'album._id': req.params.picid });
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+    
+        fs.unlinkSync(path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
+            if(err){
+                throw new Error(err);
+            }
+        });
+
+        workshop.album = workshop.album.filter((picObj) => {
+            return picObj._id.toHexString() !== req.params.picid;
+        });
+        await workshop.save();
+
+        res.send(workshop);
+    } catch (error) {
+        res.status(500).send({ error: error.message });
+    }
+});
+
+router.post(baseWorkshopUrl+ '/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+    try {
+        const workshop = await Workshop.findById(req.params.id);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+
+        const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
         const filePath = path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id));
-
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -152,7 +231,6 @@ router.post(baseWorkshopUrl + '/pic:id', authenticateAdmin, upload.single('pic')
                 }
             });
         }
-
         fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
             if (err) {
                 throw new Error(err);
@@ -160,16 +238,41 @@ router.post(baseWorkshopUrl + '/pic:id', authenticateAdmin, upload.single('pic')
         });
 
         workshop.picPath = path.join(filePath, "mainPic.png");
-
         await workshop.save();
 
         res.send(workshop);
-    } catch (err) {
-        res.status(500).send({ error: err.message });
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
-
-}, (err, req, res) => {
+}, (err, req, res, next) => {
     res.status(400).send({ error: err.message });
 });
 
+router.delete(baseWorkshopUrl + '/pic/:id', authenticateAdmin, async (req, res) =>{
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+
+    try{
+        const workshop = await Workshop.findById(req.params.id);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+
+        fs.unlink(path.resolve(path.join("../../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "mainPic.png")),(err) =>{
+            if(err){
+                throw new Error(err);
+            }
+        });
+
+        workshop.picPath = '';
+        await workshop.save();
+
+        res.send(workshop);
+
+    }catch(err){
+        res.status(500).send({ error: err.message});
+    }
+});
 module.exports = router;
