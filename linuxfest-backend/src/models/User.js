@@ -2,23 +2,28 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const persianize = require("persianize");
 
 const schema = new mongoose.Schema({
   firstName: {
     type: String,
     required: true,
     trim: true,
-    // validate(value) {
-    //   //sabte nam english ya farsi ham mishe?
-    // }
+    validate(value) {
+      if(!persianize.validator().alpha(value)){
+        throw new Error('نام معتبر نمیباشد')
+      }
+    }
   },
   lastName: {
     type: String,
     required: true,
     trim: true,
-    // validate(value) {
-    //   //sabte nam english ya farsi ham mishe?
-    // }
+    validate(value) {
+      if(!persianize.validator().alpha(value)){
+        throw new Error('نام خانوادگی معتبر نمیباشد')
+      }
+    }
   },
   email: {
     type: String,
@@ -37,7 +42,7 @@ const schema = new mongoose.Schema({
     required: true,
     minlength: 8,
     validate(value) {
-      if (validator.isLowercase(value) || validator.isUppercase(value)) {
+      if (validator.isAlpha(value) || validator.isNumeric(value)) {
         throw new Error("رمزعبور ضعیف می‌باشد");
       }
     }
