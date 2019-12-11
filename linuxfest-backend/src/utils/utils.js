@@ -1,3 +1,13 @@
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'ceit.linuxfest@gmail.com',
+        pass: process.env.MAIL_PASSWORD
+    }
+});
+
 function checkPermission(admin, perm, res) {
     console.log(admin.permissions.filter(permission => permission.permission === perm));
     if (!admin.permissions.filter(permission => permission.permission === perm).length) {
@@ -8,6 +18,26 @@ function checkPermission(admin, perm, res) {
     }
 }
 
+async function sendWelcomeEmail(user) {
+    const mailOptions = {
+        from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
+        to: user.email,
+        subject: 'Welcome to Linux Festival!',
+        text: 
+        `Hello 'n Welcome\n why are you linux dear ${user.firstName} ${user.lastName}??`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            return console.log(error);
+        }
+        console.log('Message sent: %s', info.messageId);
+    });
+}
+
+// sendWelcomeEmail("Mahanmmi@gmail.com");
+
 module.exports = {
-    checkPermission
+    checkPermission,
+    sendWelcomeEmail
 }

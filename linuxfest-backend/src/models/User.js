@@ -10,7 +10,7 @@ const schema = new mongoose.Schema({
     required: true,
     trim: true,
     validate(value) {
-      if(!persianize.validator().alpha(value)){
+      if (!persianize.validator().alpha(value)) {
         throw new Error('نام معتبر نمیباشد')
       }
     }
@@ -20,8 +20,11 @@ const schema = new mongoose.Schema({
     required: true,
     trim: true,
     validate(value) {
-      if(!persianize.validator().alpha(value)){
-        throw new Error('نام خانوادگی معتبر نمیباشد')
+      const parts = value.split(" ");
+      for (const part of parts) {
+        if (!persianize.validator().alpha(part)) {
+          throw new Error('نام خانوادگی معتبر نمیباشد')
+        }
       }
     }
   },
@@ -58,17 +61,17 @@ const schema = new mongoose.Schema({
   workshops: [{
     workshop: {
       type: mongoose.Types.ObjectId,
-      required: true  
+      required: true
     }
   }]
-},{
+}, {
   timestamps: true
 });
 
 
 
 schema.statics.findByCredentials = async function (email, password) {
-  const user = await User.findOne({email});
+  const user = await User.findOne({ email });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     throw new Error("اطلاعات واردشده معتبر نمی‌باشد");

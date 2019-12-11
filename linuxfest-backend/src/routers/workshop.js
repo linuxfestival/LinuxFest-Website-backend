@@ -13,8 +13,6 @@ const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 const router = new express.Router();
 const baseWorkshopUrl = baseURL + '/workshops';
 
-//Pictures router must be implemented!
-
 router.post(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'addWorkshop', res)) {
@@ -30,7 +28,7 @@ router.post(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
+router.get(baseWorkshopUrl + "/manage", authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getWorkshop', res)) {
             return;
@@ -49,6 +47,15 @@ router.get(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
         res.send(result);
     } catch (err) {
         res.status(500).send({ error: err.message });
+    }
+});
+
+router.get(baseWorkshopUrl, async (req, res) => {
+    try {
+        const workshops = await Workshop.find({});
+        res.send(workshops);
+    } catch (err) {
+        res.status(500).send({ err: err.message });
     }
 });
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const auth = require('../express_middlewares/userAuth');
-const { checkPermision } = require('../utils/utils')
+const { checkPermision, sendWelcomeEmail } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
 //email?
@@ -16,6 +16,7 @@ async function createUser(req, res) {
 
         const token = await user.generateAuthToken();
 
+        sendWelcomeEmail(user);
         res.status(201).send({ user, token });
     } catch (error) {
         res.status(400).send(error);
