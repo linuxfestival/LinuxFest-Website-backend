@@ -63,7 +63,14 @@ const schema = new mongoose.Schema({
       type: mongoose.Types.ObjectId,
       required: true
     }
-  }]
+  }],
+  forgotTokens: [
+    {
+      forgotToken: {
+        type: String
+      }
+    }
+  ]
 }, {
   timestamps: true
 });
@@ -93,12 +100,26 @@ schema.methods.generateAuthToken = async function () {
   return token;
 };
 
+
+schema.methods.generateForgotToken = async function(email) {
+  const user = this;
+  const forgotToken = jwt.sign({ email }, process.env.JWT_SECRET, {
+    expiresIn: "1 day"
+  });
+  user.forgotTokens = user.forgotTokens.concat({ forgotToken });
+  
+  await user.save();
+
+  return forgotToken;
+};
+
 schema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
 
   delete userObject.password;
   delete userObject.tokens;
+  delete userObject.forgotTokens;
 
   return userObject;
 };

@@ -70,7 +70,24 @@ router.post('/users/me/logoutAll', auth, async (req, res) => {
 
 router.get('/users/me', auth, async (req, res) => {
     res.send(req.user);
-})
+});
+
+router.get('/users/forget', async(req, res) =>{
+    try{
+        const user = await User.findOne({ email: req.body.user.email });
+
+        if(!user){
+            res.status(404).send(error);
+            return;
+        }
+        const forgotToken = await user.generateForgotToken(req.body.user.email);
+
+        res.status(201).send({user , forgotToken});
+
+    }catch(error){
+        res.status(400).send({error: error.message});
+    }
+});
 
 async function userPatch(user, req, res) {
     const updates = Object.keys(req.body);
@@ -90,6 +107,7 @@ async function userPatch(user, req, res) {
         res.status(400).send(error);
     }
 }
+
 
 router.patch('/users/me', auth, async (req, res) => {
     await userPatch(req.user, req, res);
