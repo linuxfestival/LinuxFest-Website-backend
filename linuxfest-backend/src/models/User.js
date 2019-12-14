@@ -67,7 +67,8 @@ const schema = new mongoose.Schema({
   forgotTokens: [
     {
       forgotToken: {
-        type: String
+        type: String,
+        required: true
       }
     }
   ]

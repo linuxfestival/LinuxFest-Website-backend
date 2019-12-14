@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const auth = require('../express_middlewares/userAuth');
-const { checkPermision, sendWelcomeEmail } = require('../utils/utils')
+const { checkPermision, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
 //email?
@@ -72,20 +72,22 @@ router.get('/users/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get('/users/forget', async(req, res) =>{
-    try{
+router.get('/users/forget', async (req, res) => {
+    try {
         const user = await User.findOne({ email: req.body.user.email });
 
-        if(!user){
-            res.status(404).send(error);
+        if (!user) {
+            res.status(404).send();
             return;
         }
         const forgotToken = await user.generateForgotToken(req.body.user.email);
 
-        res.status(201).send({user , forgotToken});
+        sendForgetPasswordEmail(user, forgotToken);
 
-    }catch(error){
-        res.status(400).send({error: error.message});
+        res.status(200).send();
+
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
 });
 

@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const { baseUrl } = require("./consts");
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -23,8 +24,26 @@ async function sendWelcomeEmail(user) {
         from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
         to: user.email,
         subject: 'Welcome to Linux Festival!',
-        text: 
-        `Hello 'n Welcome\n why are you linux dear ${user.firstName} ${user.lastName}??`
+        text:
+            `Hello 'n Welcome\n why are you linux dear ${user.firstName} ${user.lastName}??`
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            return console.log(error);
+        }
+        console.log('Message sent: %s', info.messageId);
+    });
+}
+
+async function sendForgetPasswordEmail(user, token) {
+    const mailOptions = {
+        from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
+        to: user.email,
+        subject: 'Password reset',
+        text:
+            `Hello 'n Welcome\n dear ${user.firstName} ${user.lastName}
+            follow this link to reset your password: ${process.env.SITE}${token}`
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -39,5 +58,6 @@ async function sendWelcomeEmail(user) {
 
 module.exports = {
     checkPermission,
-    sendWelcomeEmail
+    sendWelcomeEmail,
+    sendForgetPasswordEmail
 }
