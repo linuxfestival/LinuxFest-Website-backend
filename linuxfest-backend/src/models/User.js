@@ -50,6 +50,32 @@ const schema = new mongoose.Schema({
       }
     }
   },
+  phoneNumber: {
+    type: String,
+    minlength: 11,
+    maxlength: 12,
+    validate(value) {
+      if (!validator.isNumeric(value) || !value.startsWith("09")) {
+        throw new Error("شماره تماس نامعتبر است");
+      }
+    },
+    required: true
+  },
+  studentNumber: {
+    type: String,
+    minlength: 7,
+    maxlength: 8,
+    validate(value) {
+      if (!validator.isNumeric(value)) {
+        throw new Error("شماره دانشجویی نامعتبر است");
+      }
+    }
+  },
+  age: {
+    type: Number,
+    min: 16,
+    max: 99
+  },
   tokens: [
     {
       token: {
@@ -102,13 +128,13 @@ schema.methods.generateAuthToken = async function () {
 };
 
 
-schema.methods.generateForgotToken = async function(email) {
+schema.methods.generateForgotToken = async function (email) {
   const user = this;
   const forgotToken = jwt.sign({ email }, process.env.JWT_SECRET, {
     expiresIn: "1 day"
   });
   user.forgotTokens = user.forgotTokens.concat({ forgotToken });
-  
+
   await user.save();
 
   return forgotToken;

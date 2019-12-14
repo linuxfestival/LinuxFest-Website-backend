@@ -91,9 +91,12 @@ router.get('/users/forget', async (req, res) => {
     }
 });
 
-async function userPatch(user, req, res) {
+async function userPatch(user, req, res, isAdmin) {
     const updates = Object.keys(req.body);
-    const allowedUpdates = ['firstName', 'lastName', 'email', 'password'];
+    let allowedUpdates = ['firstName', 'lastName', 'email', 'password', 'age', 'phoneNumber'];
+    if(isAdmin){
+        allowedUpdates += 'studentNumber';
+    }
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
 
     if (!isValidOperation) {
@@ -110,9 +113,8 @@ async function userPatch(user, req, res) {
     }
 }
 
-
 router.patch('/users/me', auth, async (req, res) => {
-    await userPatch(req.user, req, res);
+    await userPatch(req.user, req, res, false);
 });
 
 router.patch('/users/:id', authenticateAdmin, async (req, res) => {
@@ -123,7 +125,7 @@ router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     if (!user) {
         res.status(404).send();
     }
-    await userPatch(user, req, res);
+    await userPatch(user, req, res, true);
 });
 
 async function userDelete(user, req, res) {
