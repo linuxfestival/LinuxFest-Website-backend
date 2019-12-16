@@ -128,10 +128,26 @@ router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res, true);
 });
 
+router.patch('/users/forget/:token', async(req, res) =>{
+    try{
+        const user = await User.findOne({'forgotTokens.forgotToken': req.params.token});
+        if(!user){
+            res.status(404).send();
+            return;
+        }
+        user.password = req.body.password
+
+        await user.save();
+        res.status(200).send({ user });
+    }catch(error){
+        res.status(500).send({error: error.message});
+    }
+});
+
 async function userDelete(user, req, res) {
     try {
         await User.deleteOne(user);
-        user.save();
+        await user.save();
 
         res.send(user);
     } catch (error) {
