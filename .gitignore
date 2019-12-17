@@ -6,3 +6,4 @@ config
 .eslintrc.json
 uploads
 *.orig
+*.log
