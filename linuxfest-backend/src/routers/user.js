@@ -1,12 +1,14 @@
 const express = require('express');
 const User = require('../models/User');
 const auth = require('../express_middlewares/userAuth');
-const { checkPermision, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
+
+const { baseURL } = require('../utils/consts');
+const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
-//email?
 
-const router = express.Router();
+const router = new express.Router();
+const baseUserUrl = baseURL + '/users';
 
 async function createUser(req, res) {
     const user = new User(req.body);
@@ -23,18 +25,18 @@ async function createUser(req, res) {
     }
 }
 
-router.post('/users', async (req, res) => {
+router.post(baseUserUrl, async (req, res) => {
     await createUser(req, res);
 });
 
-router.post('/users/ac', authenticateAdmin, async (req, res) => {
-    if (!checkPermision(req.admin, "addUser", res)) {
+router.post(baseUserUrl + '/ac', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, "addUser", res)) {
         return;
     }
     await createUser(req, res);
 });
 
-router.post('/users/login', async (req, res) => {
+router.post(baseUserUrl + '/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
@@ -46,7 +48,7 @@ router.post('/users/login', async (req, res) => {
     }
 });
 
-router.post('/users/me/logout', auth, async (req, res) => {
+router.post(baseUserUrl + '/me/logout', auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
         await req.user.save();
@@ -57,7 +59,7 @@ router.post('/users/me/logout', auth, async (req, res) => {
     }
 });
 
-router.post('/users/me/logoutAll', auth, async (req, res) => {
+router.post(baseUserUrl + '/me/logoutAll', auth, async (req, res) => {
     try {
         req.user.tokens = [];
 
@@ -68,7 +70,19 @@ router.post('/users/me/logoutAll', auth, async (req, res) => {
     }
 });
 
-router.get('/users/me', auth, async (req, res) => {
+router.get(baseUserUrl, authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, "getUser", res)) {
+        return;
+    }
+    try {
+        const users = await User.find();
+        res.send(users);
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+router.get(baseUserUrl + '/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
@@ -94,7 +108,7 @@ router.get('/users/forget', async (req, res) => {
 async function userPatch(user, req, res, isAdmin) {
     const updates = Object.keys(req.body);
     let allowedUpdates = ['firstName', 'lastName', 'email', 'password', 'age', 'phoneNumber'];
-    if(isAdmin){
+    if (isAdmin) {
         allowedUpdates += 'studentNumber';
     }
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -119,6 +133,7 @@ router.patch('/users/me', auth, async (req, res) => {
 
 router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermision(req.admin, "editUser", res)) {
+        res.status(401).send();
         return;
     }
     const user = await User.findById(req.params.id);
@@ -128,10 +143,10 @@ router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res, true);
 });
 
-router.patch('/users/forget/:token', async(req, res) =>{
-    try{
-        const user = await User.findOne({'forgotTokens.forgotToken': req.params.token});
-        if(!user){
+router.patch('/users/forget/:token', async (req, res) => {
+    try {
+        const user = await User.findOne({ 'forgotTokens.forgotToken': req.params.token });
+        if (!user) {
             res.status(404).send();
             return;
         }
@@ -139,8 +154,8 @@ router.patch('/users/forget/:token', async(req, res) =>{
 
         await user.save();
         res.status(200).send({ user });
-    }catch(error){
-        res.status(500).send({error: error.message});
+    } catch (error) {
+        res.status(500).send({ error: error.message });
     }
 });
 
@@ -161,6 +176,7 @@ router.delete('/users/me', auth, async (req, res) => {
 
 router.delete('/users/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermision(req.admin, "deleteUser", res)) {
+        res.status(401).send();
         return;
     }
     const user = await User.findById(req.params.id);
