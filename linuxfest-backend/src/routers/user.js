@@ -86,7 +86,7 @@ router.get(baseUserUrl + '/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get('/users/forget', async (req, res) => {
+router.get(baseUserUrl + '/forget', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.user.email });
 
@@ -127,11 +127,11 @@ async function userPatch(user, req, res, isAdmin) {
     }
 }
 
-router.patch('/users/me', auth, async (req, res) => {
+router.patch(baseUserUrl + '/me', auth, async (req, res) => {
     await userPatch(req.user, req, res, false);
 });
 
-router.patch('/users/:id', authenticateAdmin, async (req, res) => {
+router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermision(req.admin, "editUser", res)) {
         res.status(401).send();
         return;
@@ -143,7 +143,7 @@ router.patch('/users/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res, true);
 });
 
-router.patch('/users/forget/:token', async (req, res) => {
+router.patch(baseUserUrl + '/forget/:token', async (req, res) => {
     try {
         const user = await User.findOne({ 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
@@ -170,11 +170,11 @@ async function userDelete(user, req, res) {
     }
 }
 
-router.delete('/users/me', auth, async (req, res) => {
+router.delete(baseUserUrl + '/me', auth, async (req, res) => {
     await userDelete(req.user, req, res);
 });
 
-router.delete('/users/:id', authenticateAdmin, async (req, res) => {
+router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermision(req.admin, "deleteUser", res)) {
         res.status(401).send();
         return;
