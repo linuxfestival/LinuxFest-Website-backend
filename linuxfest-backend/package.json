@@ -6,7 +6,8 @@
   "scripts": {
     "test": "jest",
     "dev": "env-cmd -f ./config/dev.env nodemon ./src/index.js",
-    "dev_db": "..\\mongodb\\bin\\mongod.exe --dbpath ..\\mongodb-data"
+    "dev_db": "..\\mongodb\\bin\\mongod.exe --dbpath ..\\mongodb-data",
+    "start": "env-cmd -f ./config/dev.env node ./src/index.js"
   },
   "devDependencies": {
     "env-cmd": "^10.0.1",
