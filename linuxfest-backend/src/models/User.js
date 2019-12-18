@@ -65,6 +65,7 @@ const schema = new mongoose.Schema({
     type: String,
     minlength: 7,
     maxlength: 8,
+    unique: true,
     validate(value) {
       if (!validator.isNumeric(value)) {
         throw new Error("شماره دانشجویی نامعتبر است");
