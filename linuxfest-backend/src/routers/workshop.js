@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 
 const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
+const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
@@ -121,6 +122,59 @@ router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, re
     await workshop.save();
 
     res.send(workshop);
+});
+
+router.put(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+    try {
+        const workshop = await Workshop.findById(req.params.workshopId);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            res.status(404).send();
+            return;
+        }
+        console.log(user.workshops);
+
+        user.workshops = user.workshops.concat({ workshop: workshop._id });
+        await user.save();
+        res.status(200).send();
+    } catch (err) {
+        res.status(500).send(err);
+    }
+});
+
+router.delete(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
+    try {
+        const workshop = await Workshop.findById(req.params.workshopId);
+        if (!workshop) {
+            res.status(404).send();
+            return;
+        }
+        const user = await User.findById(req.params.userId);
+        if (!user) {
+            res.status(404).send();
+            return;
+        }
+        console.log(user.workshops);
+
+        user.workshops = user.workshops.filter(val => {
+            return val._id === workshop._id;
+        });
+        
+        await user.save();
+        res.status(200).send();
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 });
 
 
