@@ -10,8 +10,11 @@ const schema = new mongoose.Schema({
     required: true,
     trim: true,
     validate(value) {
-      if (!persianize.validator().alpha(value)) {
-        throw new Error('نام معتبر نمیباشد')
+      const parts = value.split(" ");
+      for (const part of parts) {
+        if (!persianize.validator().alpha(part)) {
+          throw new Error('نام معتبر نمیباشد')
+        }
       }
     }
   },

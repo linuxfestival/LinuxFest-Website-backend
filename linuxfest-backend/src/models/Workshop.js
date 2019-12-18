@@ -15,6 +15,10 @@ const schema = mongoose.Schema({
         required: true,
         trim: true
     },
+    price: {
+        type: Number,
+        required: true
+    },
     isRegOpen: {
         type: Boolean,
         default: false
@@ -29,6 +33,14 @@ const schema = mongoose.Schema({
     }],
     description: {
         type: String,
+        required: true
+    },
+    startTime: {
+        type: Date,
+        required: true
+    },
+    endTime: {
+        type: Date,
         required: true
     },
     teachers: [{
