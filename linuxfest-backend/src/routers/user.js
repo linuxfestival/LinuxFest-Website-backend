@@ -132,7 +132,7 @@ router.patch(baseUserUrl + '/me', auth, async (req, res) => {
 });
 
 router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
-    if (!checkPermision(req.admin, "editUser", res)) {
+    if (!checkPermission(req.admin, "editUser", res)) {
         res.status(401).send();
         return;
     }
@@ -175,7 +175,7 @@ router.delete(baseUserUrl + '/me', auth, async (req, res) => {
 });
 
 router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
-    if (!checkPermision(req.admin, "deleteUser", res)) {
+    if (!checkPermission(req.admin, "deleteUser", res)) {
         res.status(401).send();
         return;
     }
