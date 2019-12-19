@@ -80,6 +80,15 @@ router.get(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) 
     }
 });
 
+router.get(baseWorkshopUrl + "/:id", async (req, res) => {
+    const workshop = await Workshop.findById(req.params.id);
+    if (!workshop) {
+        res.status(404).send();
+        return;
+    }
+    res.send(workshop);
+})
+
 router.patch(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editWorkshop', res)) {
@@ -169,7 +178,7 @@ router.delete(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticate
         user.workshops = user.workshops.filter(val => {
             return val._id === workshop._id;
         });
-        
+
         await user.save();
         res.status(200).send();
     } catch (err) {
