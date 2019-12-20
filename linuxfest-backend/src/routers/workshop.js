@@ -101,7 +101,7 @@ router.patch(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res
             return;
         }
 
-        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers'];
+        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'startTime', 'endTime'];
         const updates = Object.keys(req.body.workshop);
         if (!updates.every(element => validUpdates.includes(element))) {
             res.status(400).send();

@@ -1,8 +1,11 @@
 const express = require('express');
+const axios = require('axios');
+const CryptoJS = require('crypto-js');
 const User = require('../models/User');
+const Workshop = require('../models/Workshop');
 const auth = require('../express_middlewares/userAuth');
 
-const { baseURL } = require('../utils/consts');
+const { baseURL, initPaymentUrl } = require('../utils/consts');
 const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
@@ -184,6 +187,67 @@ router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
         res.status(404).send();
     }
     await userDelete(user, req, res);
+});
+
+//Payment
+
+async function initPayment(user, workshop) {
+    const rand = Math.floor(Math.random() * 252097803149);
+    const orderId = parseInt(user._id, 16) % rand;
+    user.orderIDs = user.orderIDs.concat({ workshopId: workshop._id, idNumber: orderId });
+    await user.save();
+    const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + workshop.price.toLocaleString('fullwide', { useGrouping: false });
+    
+    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7
+    }).toString();
+    console.log(SignData);
+
+    let data = {
+        MerchantId: process.env.MERCHANT_ID,
+        TerminalId: process.env.TERMINAL_ID,
+        Amount: workshop.price,
+        OrderId: orderId,
+        LocalDateTime: new Date(),
+        ReturnUrl: "http://45.147.76.80/return",
+        SignData: SignData,
+        PaymentIdentity: process.env.PAYMENT_IDENTITY
+    }
+
+    console.log(data);
+
+
+    const response = await axios.post(initPaymentUrl, data);
+    console.log(response.data);
+    // return "done";
+    return response;
+}
+
+router.get(baseUserUrl + '/initPayment/:workshopId', auth, async (req, res) => {
+    const workshop = await Workshop.findById(req.params.workshopId);
+    if (!workshop) {
+        res.status(404).send();
+        return;
+    }
+    try {
+        //Check capacity
+        await workshop.populate('participants').execPopulate();
+
+        if (workshop.participants.length >= workshop.capacity) {
+            workshop.isRegOpen = false;
+            await workshop.save();
+        }
+        if (!workshop.isRegOpen) {
+            res.status(400).send("Workshop is full");
+            return;
+        }
+
+        res.send((await initPayment(req.user, workshop)).data);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+
 });
 
 module.exports = router;
