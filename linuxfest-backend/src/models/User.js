@@ -94,14 +94,23 @@ const schema = new mongoose.Schema({
       required: true
     }
   }],
-  forgotTokens: [
-    {
-      forgotToken: {
-        type: String,
-        required: true
-      }
+  forgotTokens: [{
+    forgotToken: {
+      type: String,
+      required: true
     }
-  ]
+  }],
+  orderIDs: [{
+    workshopId: {
+      type: mongoose.Types.ObjectId,
+      required: true
+    },
+    idNumber: {
+      type: Number,
+      required: true,
+      unique: true
+    }
+  }]
 }, {
   timestamps: true
 });
