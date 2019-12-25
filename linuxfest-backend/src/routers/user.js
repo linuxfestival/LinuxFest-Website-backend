@@ -223,7 +223,7 @@ async function initPayment(user, workshop) {
     return response;
 }
 
-router.get(baseUserUrl + '/initPayment/:workshopId', auth, async (req, res) => {
+router.get('/initPayment/:workshopId', auth, async (req, res) => {
     const workshop = await Workshop.findById(req.params.workshopId);
     if (!workshop) {
         res.status(404).send();
