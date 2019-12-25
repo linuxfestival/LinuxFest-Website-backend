@@ -8,7 +8,6 @@ const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
 
 const router = new express.Router();
-const baseUserUrl = baseURL + '/users';
 
 async function createUser(req, res) {
     const user = new User(req.body);
@@ -25,18 +24,18 @@ async function createUser(req, res) {
     }
 }
 
-router.post(baseUserUrl, async (req, res) => {
+router.post('/', async (req, res) => {
     await createUser(req, res);
 });
 
-router.post(baseUserUrl + '/ac', authenticateAdmin, async (req, res) => {
+router.post('/ac', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "addUser", res)) {
         return;
     }
     await createUser(req, res);
 });
 
-router.post(baseUserUrl + '/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
@@ -48,7 +47,7 @@ router.post(baseUserUrl + '/login', async (req, res) => {
     }
 });
 
-router.post(baseUserUrl + '/me/logout', auth, async (req, res) => {
+router.post('/me/logout', auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
         await req.user.save();
@@ -59,7 +58,7 @@ router.post(baseUserUrl + '/me/logout', auth, async (req, res) => {
     }
 });
 
-router.post(baseUserUrl + '/me/logoutAll', auth, async (req, res) => {
+router.post('/me/logoutAll', auth, async (req, res) => {
     try {
         req.user.tokens = [];
 
@@ -70,7 +69,7 @@ router.post(baseUserUrl + '/me/logoutAll', auth, async (req, res) => {
     }
 });
 
-router.get(baseUserUrl, authenticateAdmin, async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "getUser", res)) {
         return;
     }
@@ -82,11 +81,11 @@ router.get(baseUserUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseUserUrl + '/me', auth, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get(baseUserUrl + '/forget', async (req, res) => {
+router.get('/forget', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.user.email });
 
@@ -127,11 +126,11 @@ async function userPatch(user, req, res, isAdmin) {
     }
 }
 
-router.patch(baseUserUrl + '/me', auth, async (req, res) => {
+router.patch('/me', auth, async (req, res) => {
     await userPatch(req.user, req, res, false);
 });
 
-router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
+router.patch('/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "editUser", res)) {
         res.status(401).send();
         return;
@@ -143,7 +142,7 @@ router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res, true);
 });
 
-router.patch(baseUserUrl + '/forget/:token', async (req, res) => {
+router.patch('/forget/:token', async (req, res) => {
     try {
         const user = await User.findOne({ 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
@@ -170,11 +169,11 @@ async function userDelete(user, req, res) {
     }
 }
 
-router.delete(baseUserUrl + '/me', auth, async (req, res) => {
+router.delete('/me', auth, async (req, res) => {
     await userDelete(req.user, req, res);
 });
 
-router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "deleteUser", res)) {
         res.status(401).send();
         return;
@@ -185,5 +184,41 @@ router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     }
     await userDelete(user, req, res);
 });
+
+
+async function initPayment(user, workshop) {
+    const rand = Math.floor(Math.random() * 252097803149);
+    const orderId = parseInt(user._id, 16) % rand;
+    user.orderIDs = user.orderIDs.concat({ workshopId: workshop._id, idNumber: orderId });
+    await user.save();
+    const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + workshop.price.toLocaleString('fullwide', { useGrouping: false });
+
+    console.log("'" + sign + "'");
+
+    const SignData = CryptoJS.TripleDES.encrypt(sign, process.env.TERMINAL_KEY, {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7
+    }).toString();
+    console.log(SignData);
+
+    let data = {
+        MerchantId: process.env.MERCHANT_ID,
+        TerminalId: process.env.TERMINAL_ID,
+        Amount: workshop.price,
+        OrderId: orderId,
+        LocalDateTime: new Date(),
+        ReturnUrl: "test.test.ir",
+        SignData: SignData,
+        PaymentIdentity: process.env.PAYMENT_IDENTITY
+    }
+
+    console.log(data);
+
+
+    const response = await axios.post(initPaymentUrl, data);
+    console.log(response.data);
+    // return "done";
+    return response;
+}
 
 module.exports = router;

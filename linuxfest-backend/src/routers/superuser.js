@@ -2,6 +2,8 @@ const express = require('express');
 
 const { baseURL } = require('../utils/consts');
 const SuperUser = require('../models/SuperUser');
+const Workshop = require('../models/Workshop');
+const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const {
     authenticateCreateAdmin,
@@ -10,10 +12,8 @@ const {
 
 
 const router = new express.Router();
-const baseAdminUrl = baseURL + '/almightyone';
 
-
-router.post(baseAdminUrl, authenticateCreateAdmin, async (req, res) => {
+router.post('/', authenticateCreateAdmin, async (req, res) => {
     try {
         if (req.admin && !checkPermission(req.admin, 'addAdmin', res)) {
             return;
@@ -43,7 +43,7 @@ router.post(baseAdminUrl, authenticateCreateAdmin, async (req, res) => {
     }
 });
 
-router.post(baseAdminUrl + '/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const admin = await SuperUser.findByCredentials(req.body.username, req.body.password);
         const token = await admin.generateAuthToken();
@@ -53,7 +53,7 @@ router.post(baseAdminUrl + '/login', async (req, res) => {
     }
 });
 
-router.post(baseAdminUrl + '/logout', authenticateAdmin, async (req, res) => {
+router.post('/logout', authenticateAdmin, async (req, res) => {
     try {
         req.admin.tokens = req.admin.tokens.filter((token) => token.token !== req.token);
         await req.admin.save();
@@ -64,7 +64,7 @@ router.post(baseAdminUrl + '/logout', authenticateAdmin, async (req, res) => {
     }
 });
 
-router.post(baseAdminUrl + '/logoutall', authenticateAdmin, async (req, res) => {
+router.post('/logoutall', authenticateAdmin, async (req, res) => {
     try {
         req.admin.tokens = [];
         await req.admin.save();
@@ -75,11 +75,11 @@ router.post(baseAdminUrl + '/logoutall', authenticateAdmin, async (req, res) => 
     }
 });
 
-router.get(baseAdminUrl + '/admin', authenticateAdmin, async (req, res) => {
+router.get('/admin', authenticateAdmin, async (req, res) => {
     res.send(req.admin);
 });
 
-router.get(baseAdminUrl + '/admin/all', authenticateAdmin, async (req, res) => {
+router.get('/admin/all', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getAdmin', res)) {
             return;
@@ -91,7 +91,83 @@ router.get(baseAdminUrl + '/admin/all', authenticateAdmin, async (req, res) => {
     }
 });
 
-router.patch(baseAdminUrl + '/admin/:id', authenticateAdmin, async (req, res) => {
+router.get('/search/user', authenticateAdmin, async (req, res) => {
+    try {
+        let users;
+        if (!Object.keys(req.query).length) {
+            return res.send({
+                error: 'قسمت جستوجو خالی میباشد'
+            });
+        }
+
+        const queries = {}
+        Object.keys(req.query).filter((v) => v != 'sorted').map(v => { queries[v] = { $regex: new RegExp(req.query[v]) } });
+
+        let pipeline = User.find(queries);
+        if (req.query.sorted) {
+            let sort = { timestamps: -1 };
+            if (req.query.sorted == 'ascending') {
+                sort.timestamps = 1;
+            }
+            pipeline = pipeline.sort(sort);
+        }
+
+
+        users = await pipeline.exec();
+        if (!users) {
+            res.status(404).send();
+        }
+        res.send(users);
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+});
+router.get('/search/workshop', authenticateAdmin, async (req, res) => {
+    try {
+        let workshops;
+        if (!Object.keys(req.query).length) {
+            return res.send({
+                error: 'قسمت جستوجو خالی میباشد'
+            });
+        }
+        const queries = {};
+        Object.keys(req.query).filter((v) => v != 'sorted' && v != 'sort').map(v => { queries[v] = { $regex: new RegExp(req.query[v]) } });
+        let pipeline = Workshop.find(queries);
+        let sortBy = {};
+        if (req.query.sort) {
+            sortBy[req.query.sort] = -1;
+        }
+        //console.log(req.query.sort);
+
+        if (req.query.sorted) {
+            let sort = { startTime: -1 };
+            if (req.query.sorted == 'ascending') {
+                sort.startTime = 1;
+                if (req.query.sort) {
+                    sortBy[req.query.sort] = 1;
+                }
+            }
+            if (!req.query.sort) {
+                pipeline = pipeline.sort(sort);
+
+            }
+            else {
+                pipeline = pipeline.sort(sortBy);
+            }
+
+        }
+
+        workshops = await pipeline.exec();
+        if (!workshops) {
+            res.status(404).send();
+        }
+        res.send(workshops)
+
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+});
+router.patch('/admin/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editAdmin', res)) {
             return;
@@ -127,7 +203,7 @@ router.patch(baseAdminUrl + '/admin/:id', authenticateAdmin, async (req, res) =>
     }
 });
 
-router.delete(baseAdminUrl + '/admin/:id', authenticateAdmin, async (req, res) => {
+router.delete('/admin/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'deleteAdmin', res)) {
             return;

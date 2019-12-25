@@ -43,6 +43,10 @@ const schema = mongoose.Schema({
         type: Date,
         required: true
     },
+    participantsNumber: {
+        type: Number,
+        default: 0
+    },
     teachers: [{
         teacher: {
             type: mongoose.Types.ObjectId,

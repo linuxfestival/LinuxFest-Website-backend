@@ -5,16 +5,14 @@ const multer = require('multer');
 const sharp = require('sharp');
 const mongoose = require('mongoose');
 
-const { baseURL } = require('../utils/consts');
 const Workshop = require('../models/Workshop');
 const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 const router = new express.Router();
-const baseWorkshopUrl = baseURL + '/workshops';
 
-router.post(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'addWorkshop', res)) {
             return;
@@ -29,7 +27,7 @@ router.post(baseWorkshopUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseWorkshopUrl + "/manage", authenticateAdmin, async (req, res) => {
+router.get("/manage", authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getWorkshop', res)) {
             return;
@@ -51,7 +49,7 @@ router.get(baseWorkshopUrl + "/manage", authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseWorkshopUrl, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const workshops = await Workshop.find({});
         res.send(workshops);
@@ -60,7 +58,7 @@ router.get(baseWorkshopUrl, async (req, res) => {
     }
 });
 
-router.get(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.get('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getWorkshop', res)) {
             return;
@@ -80,7 +78,7 @@ router.get(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) 
     }
 });
 
-router.get(baseWorkshopUrl + "/:id", async (req, res) => {
+router.get("/:id", async (req, res) => {
     const workshop = await Workshop.findById(req.params.id);
     if (!workshop) {
         res.status(404).send();
@@ -89,7 +87,7 @@ router.get(baseWorkshopUrl + "/:id", async (req, res) => {
     res.send(workshop);
 })
 
-router.patch(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editWorkshop', res)) {
             return;
@@ -116,7 +114,7 @@ router.patch(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res
     }
 });
 
-router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'deleteWorkshop', res)) {
         return;
     }
@@ -133,7 +131,7 @@ router.delete(baseWorkshopUrl + '/manage/:id', authenticateAdmin, async (req, re
     res.send(workshop);
 });
 
-router.put(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
+router.put('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
@@ -158,7 +156,7 @@ router.put(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticateAdm
     }
 });
 
-router.delete(baseWorkshopUrl + '/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
+router.delete('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
@@ -200,7 +198,7 @@ const upload = multer({
     }
 });
 
-router.post(baseWorkshopUrl + '/pic/album/:id', authenticateAdmin, upload.array('pictures'), async (req, res) => {
+router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
@@ -247,7 +245,7 @@ router.post(baseWorkshopUrl + '/pic/album/:id', authenticateAdmin, upload.array(
     res.status(400).send({ error: err.message });
 });
 
-router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
+router.delete('/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
@@ -276,7 +274,7 @@ router.delete(baseWorkshopUrl + '/pic/album/:id/:picid', authenticateAdmin, asyn
     }
 });
 
-router.post(baseWorkshopUrl + '/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
+router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }
@@ -313,7 +311,7 @@ router.post(baseWorkshopUrl + '/pic/:id', authenticateAdmin, upload.single('main
     res.status(400).send({ error: err.message });
 });
 
-router.delete(baseWorkshopUrl + '/pic/:id', authenticateAdmin, async (req, res) => {
+router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
     }

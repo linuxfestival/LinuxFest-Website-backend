@@ -1,4 +1,6 @@
 const express = require('express');
+const { baseURL } = require('./utils/consts');
+
 //const cors = require('cors');
 
 const app = express();
@@ -14,9 +16,9 @@ app.use(function (req, res, next) {
 
 app.use(express.json());
 
-app.use(require('./routers/superuser'));
-app.use(require('./routers/user'));
-app.use(require('./routers/workshop'));
-app.use(require('./routers/teacher'));
+app.use(`${baseURL}/almightyone`, require('./routers/superuser'));
+app.use(`${baseURL}/users`, require('./routers/user'));
+app.use(`${baseURL}/workshops`, require('./routers/workshop'));
+app.use(`${baseURL}/teachers`, require('./routers/teacher'));
 
 module.exports = app;
