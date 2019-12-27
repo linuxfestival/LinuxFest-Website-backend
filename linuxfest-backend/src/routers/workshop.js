@@ -6,6 +6,7 @@ const sharp = require('sharp');
 const mongoose = require('mongoose');
 
 const Workshop = require('../models/Workshop');
+const Teacher = require('../models/Teacher');
 const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
@@ -19,6 +20,13 @@ router.post('/', authenticateAdmin, async (req, res) => {
         }
 
         const workshop = new Workshop(req.body.workshop);
+        for (obj of workshop.teachers) {
+            const id = obj.teacher;
+            console.log(id);
+
+            const teacher = await Teacher.findById(id);
+            obj.name = teacher.fullName
+        }
         await workshop.save();
 
         res.send(workshop)

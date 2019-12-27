@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Teacher = require('./Teacher');
 
 const schema = mongoose.Schema({
     capacity: {
@@ -51,6 +52,9 @@ const schema = mongoose.Schema({
         teacher: {
             type: mongoose.Types.ObjectId,
             required: true
+        },
+        name: {
+            type: String,
         }
     }]
 });
@@ -59,6 +63,19 @@ schema.virtual('participants', {
     ref: 'User',
     localField: '_id',
     foreignField: 'workshops.workshop'
+});
+
+schema.pre("save", async function (next) {
+    const workshop = this;
+
+    if (workshop.isModified("teachers")) {
+        for (obj of workshop.teachers) {
+            const id = obj.teacher;
+            const teacher = await Teacher.findById(id);
+            obj.name = teacher.fullName
+        }
+    }
+    next();
 });
 
 const Workshop = new mongoose.model('Workshop', schema);
