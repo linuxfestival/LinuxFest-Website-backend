@@ -4,15 +4,13 @@ const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
 
-const { baseURL } = require('../utils/consts');
 const Teacher = require('../models/Teacher');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 const router = new express.Router();
-const baseTeacherUrl = baseURL + '/teachers';
 
-router.post(baseTeacherUrl, authenticateAdmin, async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'addTeacher', res)) {
             return;
@@ -27,7 +25,7 @@ router.post(baseTeacherUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseTeacherUrl, authenticateAdmin, async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getTeacher', res)) {
             return;
@@ -49,7 +47,7 @@ router.get(baseTeacherUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseTeacherUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.get('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getTeacher', res)) {
             return;
@@ -68,7 +66,7 @@ router.get(baseTeacherUrl + '/manage/:id', authenticateAdmin, async (req, res) =
     }
 })
 
-router.patch(baseTeacherUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editTeacher', res)) {
             return;
@@ -95,7 +93,7 @@ router.patch(baseTeacherUrl + '/manage/:id', authenticateAdmin, async (req, res)
     }
 });
 
-router.delete(baseTeacherUrl + '/manage/:id', authenticateAdmin, async (req, res) => {
+router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'deleteTeacher', res)) {
             return;
@@ -132,7 +130,7 @@ const upload = multer({
     }
 });
 
-router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
+router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
     if (!checkPermission(req.admin, 'editTeacher', res)) {
         return;
     }
@@ -169,14 +167,14 @@ router.post(baseTeacherUrl + '/pic/:id', authenticateAdmin, upload.single('mainP
     res.status(400).send({ error: err.message });
 });
 
-router.delete(baseTeacherUrl + '/pic/:id', authenticateAdmin, async (req, res) => {
+router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editTeacher', res)) {
         return;
     }
 
     try {
         const teacher = await Teacher.findById(req.params.id);
-        
+
         if (!teacher || !teacher.imagePath) {
             res.status(404).send();
             return;
