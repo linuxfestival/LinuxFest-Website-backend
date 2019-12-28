@@ -19,11 +19,15 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
+<<<<<<< HEAD
         const workshop = new Workshop(req.body);
         for (obj of workshop.teachers) {
+=======
+        const workshop = new Workshop(req.body.workshop);
+        for (const obj of workshop.teachers) {
+>>>>>>> 091a938df331ffa38419897cda328869503f67c7
             const id = obj.id;
             console.log(id);
-
             const teacher = await Teacher.findById(id);
             obj.name = teacher.fullName
         }

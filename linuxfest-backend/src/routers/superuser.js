@@ -1,6 +1,5 @@
 const express = require('express');
 
-const { baseURL } = require('../utils/consts');
 const SuperUser = require('../models/SuperUser');
 const Workshop = require('../models/Workshop');
 const User = require('../models/User');

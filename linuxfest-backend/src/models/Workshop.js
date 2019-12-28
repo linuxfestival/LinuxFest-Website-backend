@@ -69,7 +69,7 @@ schema.pre("save", async function (next) {
     const workshop = this;
 
     if (workshop.isModified("teachers")) {
-        for (obj of workshop.teachers) {
+        for (const obj of workshop.teachers) {
             const id = obj.id;
             const teacher = await Teacher.findById(id);
             obj.name = teacher.fullName
