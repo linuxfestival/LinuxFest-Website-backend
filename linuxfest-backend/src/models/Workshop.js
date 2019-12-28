@@ -49,7 +49,7 @@ const schema = mongoose.Schema({
         default: 0
     },
     teachers: [{
-        teacher: {
+        id: {
             type: mongoose.Types.ObjectId,
             required: true
         },
@@ -70,7 +70,7 @@ schema.pre("save", async function (next) {
 
     if (workshop.isModified("teachers")) {
         for (const obj of workshop.teachers) {
-            const id = obj.teacher;
+            const id = obj.id;
             const teacher = await Teacher.findById(id);
             obj.name = teacher.fullName
         }
