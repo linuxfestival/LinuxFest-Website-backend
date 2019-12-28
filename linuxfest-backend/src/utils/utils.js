@@ -41,8 +41,7 @@ async function sendForgetPasswordEmail(user, token) {
         to: user.email,
         subject: 'Password reset',
         text:
-            `Hello 'n Welcome\n dear ${user.firstName} ${user.lastName}
-            follow this link to reset your password: ${process.env.SITE}${token}`
+            `Hello 'n Welcome\nDear ${user.firstName} ${user.lastName}\nFollow this link to reset your password: ${process.env.SITE}/user/forget/${token}`
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -52,8 +51,6 @@ async function sendForgetPasswordEmail(user, token) {
         console.log('Message sent: %s', info.messageId);
     });
 }
-
-// sendWelcomeEmail("Mahanmmi@gmail.com");
 
 module.exports = {
     checkPermission,

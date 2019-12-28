@@ -1,6 +1,8 @@
 const express = require('express');
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
+const jwt = require('jsonwebtoken');
+
 const User = require('../models/User');
 const Workshop = require('../models/Workshop');
 const auth = require('../express_middlewares/userAuth');
@@ -148,12 +150,13 @@ router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
 
 router.patch(baseUserUrl + '/forget/:token', async (req, res) => {
     try {
-        const user = await User.findOne({ 'forgotTokens.forgotToken': req.params.token });
+        const decodedEmail = jwt.verify(req.params.token, process.env.JWT_SECRET);
+        const user = await User.findOne({ email: decodedEmail, 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
             res.status(404).send();
             return;
         }
-        user.password = req.body.password
+        user.password = req.body.password;
 
         await user.save();
         res.status(200).send({ user });
@@ -189,22 +192,23 @@ router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     await userDelete(user, req, res);
 });
 
-//Payment
+// Payment
 
 async function initPayment(user, workshop) {
-    const rand = Math.floor(Math.random() * 252097803149);
+    const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
     const orderId = parseInt(user._id, 16) % rand;
     user.orderIDs = user.orderIDs.concat({ workshopId: workshop._id, idNumber: orderId });
     await user.save();
+
     const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + workshop.price.toLocaleString('fullwide', { useGrouping: false });
-    
-    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
+
+    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY),{
         mode: CryptoJS.mode.ECB,
         padding: CryptoJS.pad.Pkcs7
     }).toString();
     console.log(SignData);
 
-    let data = {
+    const data = {
         MerchantId: process.env.MERCHANT_ID,
         TerminalId: process.env.TERMINAL_ID,
         Amount: workshop.price,
@@ -217,10 +221,8 @@ async function initPayment(user, workshop) {
 
     console.log(data);
 
-
     const response = await axios.post(initPaymentUrl, data);
     console.log(response.data);
-    // return "done";
     return response;
 }
 
@@ -245,7 +247,7 @@ router.get(baseUserUrl + '/initPayment/:workshopId', auth, async (req, res) => {
 
         res.send((await initPayment(req.user, workshop)).data);
     } catch (err) {
-        res.status(500).send(err.message);
+        res.status(500).send({ msg: err.message, err });
     }
 
 });
