@@ -23,11 +23,11 @@ router.post('/', authenticateCreateAdmin, async (req, res) => {
             return;
         }
 
-        req.newAdmin.username = req.body.admin.username;
-        req.newAdmin.password = req.body.admin.password;
+        req.newAdmin.username = req.body.username;
+        req.newAdmin.password = req.body.password;
         if (req.admin) {
             const forbiddenPerms = ['addAdmin', 'editAdmin', 'deleteAdmin', 'getAdmin'];
-            const perms = req.body.admin.permissions.filter((element) => {
+            const perms = req.body.permissions.filter((element) => {
                 return !forbiddenPerms.includes(element);
             });
             req.newAdmin.permissions = perms.map(element => { return { permission: element } });
@@ -179,20 +179,20 @@ router.patch('/admin/:id', authenticateAdmin, async (req, res) => {
         }
 
         const validFields = ['username', 'password', 'permissions'];
-        for (const element in req.body.admin) {
+        for (const element in req.body) {
             if (!validFields.includes(element)) {
                 res.status(400).send();
                 return;
             }
         }
 
-        Object.keys(req.body.admin).forEach((update) => {
+        Object.keys(req.body).forEach((update) => {
             if (update === 'permissions') {
                 const forbiddenPerms = ['addAdmin', 'editAdmin', 'deleteAdmin', 'getAdmin'];
-                const perm = req.body.admin.permissions.filter(element => !forbiddenPerms.includes(element));
+                const perm = req.body.permissions.filter(element => !forbiddenPerms.includes(element));
                 admin.permissions = perm.map(element => { return { permission: element } });
             } else {
-                admin[update] = req.body.admin[update];
+                admin[update] = req.body[update];
             }
         });
         await admin.save();

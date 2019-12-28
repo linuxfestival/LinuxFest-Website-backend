@@ -19,7 +19,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const workshop = new Workshop(req.body.workshop);
+        const workshop = new Workshop(req.body);
         for (obj of workshop.teachers) {
             const id = obj.id;
             console.log(id);
@@ -108,13 +108,13 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
         }
 
         const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'startTime', 'endTime'];
-        const updates = Object.keys(req.body.workshop);
+        const updates = Object.keys(req.body);
         if (!updates.every(element => validUpdates.includes(element))) {
             res.status(400).send();
             return;
         }
 
-        updates.forEach(update => workshop[update] = req.body.workshop[update]);
+        updates.forEach(update => workshop[update] = req.body[update]);
         await workshop.save()
         res.send(workshop);
     } catch (err) {

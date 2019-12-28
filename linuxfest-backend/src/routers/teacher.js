@@ -16,7 +16,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const teacher = new Teacher(req.body.teacher);
+        const teacher = new Teacher(req.body);
         await teacher.save();
         res.send(teacher);
 
@@ -79,13 +79,13 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
         }
 
         const validUpdates = ['fullName', 'description'];
-        const updates = Object.keys(req.body.teacher);
+        const updates = Object.keys(req.body);
         const isValidOperation = updates.every((update) => validUpdates.includes(update));
 
         if (!isValidOperation) {
             res.status(400).send({ error: 'Invalid updates' });
         }
-        updates.forEach(update => teacher[update] = req.body.teacher[update]);
+        updates.forEach(update => teacher[update] = req.body[update]);
         await teacher.save();
         res.send(teacher);
     } catch (err) {
