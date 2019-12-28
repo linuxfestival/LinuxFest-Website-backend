@@ -7,13 +7,12 @@ const User = require('../models/User');
 const Workshop = require('../models/Workshop');
 const auth = require('../express_middlewares/userAuth');
 
-const { baseURL, initPaymentUrl } = require('../utils/consts');
+const { initPaymentUrl } = require('../utils/consts');
 const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
 const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 
 
 const router = new express.Router();
-const baseUserUrl = baseURL + '/users';
 
 async function createUser(req, res) {
     const user = new User(req.body);
@@ -30,18 +29,18 @@ async function createUser(req, res) {
     }
 }
 
-router.post(baseUserUrl, async (req, res) => {
+router.post("/", async (req, res) => {
     await createUser(req, res);
 });
 
-router.post(baseUserUrl + '/ac', authenticateAdmin, async (req, res) => {
+router.post('/ac', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "addUser", res)) {
         return;
     }
     await createUser(req, res);
 });
 
-router.post(baseUserUrl + '/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
         const token = await user.generateAuthToken();
@@ -53,7 +52,7 @@ router.post(baseUserUrl + '/login', async (req, res) => {
     }
 });
 
-router.post(baseUserUrl + '/me/logout', auth, async (req, res) => {
+router.post('/me/logout', auth, async (req, res) => {
     try {
         req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token);
         await req.user.save();
@@ -64,7 +63,7 @@ router.post(baseUserUrl + '/me/logout', auth, async (req, res) => {
     }
 });
 
-router.post(baseUserUrl + '/me/logoutAll', auth, async (req, res) => {
+router.post('/me/logoutAll', auth, async (req, res) => {
     try {
         req.user.tokens = [];
 
@@ -75,7 +74,7 @@ router.post(baseUserUrl + '/me/logoutAll', auth, async (req, res) => {
     }
 });
 
-router.get(baseUserUrl, authenticateAdmin, async (req, res) => {
+router.get("/", authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "getUser", res)) {
         return;
     }
@@ -87,11 +86,11 @@ router.get(baseUserUrl, authenticateAdmin, async (req, res) => {
     }
 });
 
-router.get(baseUserUrl + '/me', auth, async (req, res) => {
+router.get('/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get(baseUserUrl + '/forget', async (req, res) => {
+router.get('/forget', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.user.email });
 
@@ -132,11 +131,11 @@ async function userPatch(user, req, res, isAdmin) {
     }
 }
 
-router.patch(baseUserUrl + '/me', auth, async (req, res) => {
+router.patch('/me', auth, async (req, res) => {
     await userPatch(req.user, req, res, false);
 });
 
-router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
+router.patch('/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "editUser", res)) {
         res.status(401).send();
         return;
@@ -148,7 +147,7 @@ router.patch(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
     await userPatch(user, req, res, true);
 });
 
-router.patch(baseUserUrl + '/forget/:token', async (req, res) => {
+router.patch('/forget/:token', async (req, res) => {
     try {
         const decodedEmail = jwt.verify(req.params.token, process.env.JWT_SECRET);
         const user = await User.findOne({ email: decodedEmail, 'forgotTokens.forgotToken': req.params.token });
@@ -176,11 +175,11 @@ async function userDelete(user, req, res) {
     }
 }
 
-router.delete(baseUserUrl + '/me', auth, async (req, res) => {
+router.delete('/me', auth, async (req, res) => {
     await userDelete(req.user, req, res);
 });
 
-router.delete(baseUserUrl + '/:id', authenticateAdmin, async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "deleteUser", res)) {
         res.status(401).send();
         return;
@@ -226,7 +225,7 @@ async function initPayment(user, workshop) {
     return response;
 }
 
-router.get(baseUserUrl + '/initPayment/:workshopId', auth, async (req, res) => {
+router.get('/initPayment/:workshopId', auth, async (req, res) => {
     const workshop = await Workshop.findById(req.params.workshopId);
     if (!workshop) {
         res.status(404).send();
