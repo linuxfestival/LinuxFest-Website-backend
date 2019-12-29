@@ -24,7 +24,10 @@ router.post('/', authenticateAdmin, async (req, res) => {
             const id = obj.id;
             console.log(id);
             const teacher = await Teacher.findById(id);
-            obj.name = teacher.fullName
+            if(!teacher){
+                res.status(404).send("Teacher not found");
+            }
+            obj.name = teacher.fullName;
         }
         await workshop.save();
 
@@ -78,8 +81,12 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
         }
 
         await workshop.populate('participants').execPopulate();
+        let teachers = [];
+        for(const teacher of workshop.teachers) {
+            teachers = teachers.concat(await Teacher.findById(teacher.id));
+        }
 
-        res.send({ workshop, participants: workshop.participants });
+        res.send({ workshop, participants: workshop.participants, teachers });
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -91,7 +98,11 @@ router.get("/:id", async (req, res) => {
         res.status(404).send();
         return;
     }
-    res.send(workshop);
+    let teachers = [];
+    for (const teacher of workshop.teachers) {
+        teachers = teachers.concat(await Teacher.findById(teacher.id));
+    }
+    res.send({workshop , teachers});
 })
 
 router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
