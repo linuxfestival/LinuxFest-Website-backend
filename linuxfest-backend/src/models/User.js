@@ -101,10 +101,10 @@ const schema = new mongoose.Schema({
     }
   }],
   orderIDs: [{
-    workshopId: {
+    workshopId: [{
       type: mongoose.Types.ObjectId,
       required: true
-    },
+    }],
     idNumber: {
       type: Number,
       required: true,

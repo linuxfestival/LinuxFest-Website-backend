@@ -92,13 +92,13 @@ router.get('/me', auth, async (req, res) => {
 
 router.post('/forget', async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.user.email });
+        const user = await User.findOne({ email: req.body.email });
 
         if (!user) {
             res.status(404).send();
             return;
         }
-        const forgotToken = await user.generateForgotToken(req.body.user.email);
+        const forgotToken = await user.generateForgotToken(req.body.email);
 
         sendForgetPasswordEmail(user, forgotToken);
 
@@ -193,15 +193,20 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 
 // Payment
 
-async function initPayment(user, workshop) {
+async function initPayment(user, workshops, workshopIds) {
     const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
     const orderId = parseInt(user._id, 16) % rand;
-    user.orderIDs = user.orderIDs.concat({ workshopId: workshop._id, idNumber: orderId });
+    user.orderIDs = user.orderIDs.concat({ workshopIds, idNumber: orderId });
     await user.save();
 
-    const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + workshop.price.toLocaleString('fullwide', { useGrouping: false });
+    let price = 0;
+    workshops.forEach(workshop => {
+        price += workshop.price;
+    });
 
-    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY),{
+    const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
+
+    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
         mode: CryptoJS.mode.ECB,
         padding: CryptoJS.pad.Pkcs7
     }).toString();
@@ -210,7 +215,7 @@ async function initPayment(user, workshop) {
     const data = {
         MerchantId: process.env.MERCHANT_ID,
         TerminalId: process.env.TERMINAL_ID,
-        Amount: workshop.price,
+        Amount: price,
         OrderId: orderId,
         LocalDateTime: new Date(),
         ReturnUrl: "http://45.147.76.80/return",
@@ -225,30 +230,41 @@ async function initPayment(user, workshop) {
     return response;
 }
 
-router.get('/initPayment/:workshopId', auth, async (req, res) => {
-    const workshop = await Workshop.findById(req.params.workshopId);
-    if (!workshop) {
-        res.status(404).send();
-        return;
+router.post('/initPayment', auth, async (req, res) => {
+    let workshops = [];
+    try {
+        for (const workshopId of req.body.workshopIds) {
+            const workshop = await Workshop.findById(workshopId);
+            if (!workshop) {
+                res.status(404).send(`${workshopId} not found`);
+                return;
+            }
+            try {
+                //Check capacity
+                await workshop.populate('participants').execPopulate();
+
+                if (workshop.participants.length >= workshop.capacity) {
+                    workshop.isRegOpen = false;
+                    await workshop.save();
+                }
+                if (!workshop.isRegOpen) {
+                    res.status(400).send(`Workshop ${workshopId} is full`);
+                    return;
+                }
+                workshops = workshops.concat(workshop);
+            } catch (err) {
+                res.status(500).send({ msg: err.message, err });
+            }
+
+        }
+    } catch (err) {
+        res.status(400).send();
     }
     try {
-        //Check capacity
-        await workshop.populate('participants').execPopulate();
-
-        if (workshop.participants.length >= workshop.capacity) {
-            workshop.isRegOpen = false;
-            await workshop.save();
-        }
-        if (!workshop.isRegOpen) {
-            res.status(400).send("Workshop is full");
-            return;
-        }
-
-        res.send((await initPayment(req.user, workshop)).data);
+        res.send((await initPayment(req.user, workshops, req.body.workshopIds)).data);
     } catch (err) {
-        res.status(500).send({ msg: err.message, err });
+        res.status(500).send();
     }
-
 });
 
 module.exports = router;
