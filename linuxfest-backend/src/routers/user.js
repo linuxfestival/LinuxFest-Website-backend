@@ -90,7 +90,7 @@ router.get('/me', auth, async (req, res) => {
     res.send(req.user);
 });
 
-router.get('/forget', async (req, res) => {
+router.post('/forget', async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.user.email });
 
