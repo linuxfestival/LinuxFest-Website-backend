@@ -89,10 +89,10 @@ const schema = new mongoose.Schema({
     }
   ],
   workshops: [{
-    workshop: {
-      type: mongoose.Types.ObjectId,
-      required: true
-    }
+    type: mongoose.Types.ObjectId,
+    required: true,
+    ref: 'Workshop'
+
   }],
   forgotTokens: [{
     forgotToken: {

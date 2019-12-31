@@ -43,12 +43,13 @@ router.post('/ac', authenticateAdmin, async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
+        await user.populate('workshops').execPopulate();
         const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (error) {
         console.log(error);
 
-        res.status(400).send(error);
+        res.status(400).send({ error: error.message });
     }
 });
 
@@ -80,14 +81,18 @@ router.get("/", authenticateAdmin, async (req, res) => {
     }
     try {
         const users = await User.find();
+        for (const user of users) {
+            await user.populate('workshops').execPopulate();
+        }
         res.send(users);
     } catch (err) {
-        res.status(500).send(err);
+        res.status(500).send({ error: err.message });
     }
 });
 
 router.get('/me', auth, async (req, res) => {
-    res.send(req.user);
+    const user = await req.user.populate('workshops').execPopulate();
+    res.send(user);
 });
 
 router.post('/forget', async (req, res) => {
@@ -124,6 +129,7 @@ async function userPatch(user, req, res, isAdmin) {
         updates.forEach((update) => user[update] = req.body[update]);
 
         await user.save();
+        await user.populate('workshops').execPopulate();
 
         res.send(user);
     } catch (error) {
@@ -168,7 +174,6 @@ async function userDelete(user, req, res) {
     try {
         await User.deleteOne(user);
         await user.save();
-
         res.send(user);
     } catch (error) {
         res.status(500).send();
