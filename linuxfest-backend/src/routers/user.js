@@ -43,7 +43,6 @@ router.post('/ac', authenticateAdmin, async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(req.body.email, req.body.password);
-        await user.populate('workshops').execPopulate();
         const token = await user.generateAuthToken();
         res.send({ user, token });
     } catch (error) {
@@ -81,18 +80,34 @@ router.get("/", authenticateAdmin, async (req, res) => {
     }
     try {
         const users = await User.find();
-        for (const user of users) {
-            await user.populate('workshops').execPopulate();
-        }
         res.send(users);
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
 });
 
+router.get("/:id", authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, "getUser", res)) {
+        return;
+    }
+    try {
+        const user = await User.findById(req.params.id);
+        let workshops = [];
+        for (const workshop of user.workshops) {
+            workshops = workshops.concat(await Workshop.findById(workshop.workshop));
+        }
+        res.send({ user, workshops });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
+    }
+});
+
 router.get('/me', auth, async (req, res) => {
-    const user = await req.user.populate('workshops').execPopulate();
-    res.send(user);
+    let workshops = [];
+    for (const workshop of req.user.workshops) {
+        workshops = workshops.concat(await Workshop.findById(workshop.workshop));
+    }
+    res.send({ user: req.user, workshops });
 });
 
 router.post('/forget', async (req, res) => {
@@ -129,7 +144,6 @@ async function userPatch(user, req, res, isAdmin) {
         updates.forEach((update) => user[update] = req.body[update]);
 
         await user.save();
-        await user.populate('workshops').execPopulate();
 
         res.send(user);
     } catch (error) {
@@ -247,7 +261,6 @@ router.post('/initPayment', auth, async (req, res) => {
             try {
                 //Check capacity
                 await workshop.populate('participants').execPopulate();
-
                 if (workshop.participants.length >= workshop.capacity) {
                     workshop.isRegOpen = false;
                     await workshop.save();

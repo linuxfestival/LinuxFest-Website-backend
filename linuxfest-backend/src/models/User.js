@@ -89,10 +89,10 @@ const schema = new mongoose.Schema({
     }
   ],
   workshops: [{
-    type: mongoose.Types.ObjectId,
-    required: true,
-    ref: 'Workshop'
-
+    workshop: {
+      type: mongoose.Types.ObjectId,
+      required: true
+    }
   }],
   forgotTokens: [{
     forgotToken: {
@@ -101,15 +101,15 @@ const schema = new mongoose.Schema({
     }
   }],
   orderIDs: [{
-    workshopId: [{
-      type: mongoose.Types.ObjectId,
-      required: true
-    }],
     idNumber: {
       type: Number,
       required: true,
       unique: true
-    }
+    },
+    workshopId: [{
+      type: mongoose.Types.ObjectId,
+      required: true
+    }]
   }]
 }, {
   timestamps: true
@@ -156,6 +156,9 @@ schema.methods.generateForgotToken = async function (email) {
 schema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
+
+  console.log(user);
+
 
   delete userObject.password;
   delete userObject.tokens;
