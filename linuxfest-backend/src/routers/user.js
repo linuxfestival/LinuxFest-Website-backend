@@ -15,7 +15,12 @@ const { authenticateAdmin } = require('../express_middlewares/adminAuth')
 const router = new express.Router();
 
 async function createUser(req, res) {
-    const user = new User(req.body);
+    const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber"];
+    const finalBody = {};
+    validFields.forEach(field => {
+        finalBody[field] = req.body[field];
+    });
+    const user = new User(finalBody);
 
     try {
         await user.save();

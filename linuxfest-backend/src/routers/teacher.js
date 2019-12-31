@@ -16,7 +16,12 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const teacher = new Teacher(req.body);
+        const validFields = ["fullName", "description"];
+        const finalBody = {};
+        validFields.forEach(field => {
+            finalBody[field] = req.body[field];
+        });
+        const teacher = new Teacher(finalBody);
         await teacher.save();
         res.send(teacher);
 

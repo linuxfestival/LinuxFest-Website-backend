@@ -19,7 +19,12 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const workshop = new Workshop(req.body);
+        const validFields = ["capacity", "title", "price", "isRegOpen", "description", "startTime", "endTime", "teachers"];
+        const finalBody = {};
+        validFields.forEach(field => {
+            finalBody[field] = req.body[field];
+        });
+        const workshop = new Workshop(finalBody);
         for (const obj of workshop.teachers) {
             const id = obj.id;
             console.log(id);
