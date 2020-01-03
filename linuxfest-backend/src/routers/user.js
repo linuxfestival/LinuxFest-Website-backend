@@ -91,6 +91,14 @@ router.get("/", authenticateAdmin, async (req, res) => {
     }
 });
 
+router.get('/me', auth, async (req, res) => {
+    let workshops = [];
+    for (const workshop of req.user.workshops) {
+        workshops = workshops.concat(await Workshop.findById(workshop.workshop));
+    }
+    res.send({ user: req.user, workshops });
+});
+
 router.get("/:id", authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, "getUser", res)) {
         return;
@@ -105,14 +113,6 @@ router.get("/:id", authenticateAdmin, async (req, res) => {
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
-});
-
-router.get('/me', auth, async (req, res) => {
-    let workshops = [];
-    for (const workshop of req.user.workshops) {
-        workshops = workshops.concat(await Workshop.findById(workshop.workshop));
-    }
-    res.send({ user: req.user, workshops });
 });
 
 router.post('/forget', async (req, res) => {
