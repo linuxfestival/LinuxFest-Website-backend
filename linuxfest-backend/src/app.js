@@ -20,5 +20,6 @@ app.use(`${baseURL}/almightyone`, require('./routers/superuser'));
 app.use(`${baseURL}/users`, require('./routers/user'));
 app.use(`${baseURL}/workshops`, require('./routers/workshop'));
 app.use(`${baseURL}/teachers`, require('./routers/teacher'));
+app.use(`${baseURL}/statics`, require('./routers/static'));
 
 module.exports = app;

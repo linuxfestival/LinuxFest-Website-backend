@@ -141,7 +141,6 @@ schema.methods.generateAuthToken = async function () {
   return token;
 };
 
-
 schema.methods.generateForgotToken = async function (email) {
   const user = this;
   const forgotToken = jwt.sign({ email }, process.env.JWT_SECRET, {

@@ -8,8 +8,8 @@ const Workshop = require('../models/Workshop');
 const auth = require('../express_middlewares/userAuth');
 
 const { initPaymentUrl } = require('../utils/consts');
-const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils')
-const { authenticateAdmin } = require('../express_middlewares/adminAuth')
+const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils');
+const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 
 const router = new express.Router();
