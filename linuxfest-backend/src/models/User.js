@@ -105,7 +105,8 @@ const schema = new mongoose.Schema({
     idNumber: {
       type: Number,
       required: true,
-      unique: true
+      unique: true,
+      sparse: true
     },
     workshopId: [{
       type: mongoose.Types.ObjectId,
