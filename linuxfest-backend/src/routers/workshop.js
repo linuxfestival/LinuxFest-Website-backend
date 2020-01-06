@@ -29,7 +29,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
             const id = obj.id;
             console.log(id);
             const teacher = await Teacher.findById(id);
-            if(!teacher){
+            if (!teacher) {
                 res.status(404).send("Teacher not found");
             }
             obj.name = teacher.fullName;
@@ -87,7 +87,7 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
 
         await workshop.populate('participants').execPopulate();
         let teachers = [];
-        for(const teacher of workshop.teachers) {
+        for (const teacher of workshop.teachers) {
             teachers = teachers.concat(await Teacher.findById(teacher.id));
         }
 
@@ -107,7 +107,7 @@ router.get("/:id", async (req, res) => {
     for (const teacher of workshop.teachers) {
         teachers = teachers.concat(await Teacher.findById(teacher.id));
     }
-    res.send({workshop , teachers});
+    res.send({ workshop, teachers });
 })
 
 router.patch('/manage/:id', authenticateAdmin, async (req, res) => {

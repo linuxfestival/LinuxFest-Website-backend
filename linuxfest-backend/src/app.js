@@ -1,5 +1,7 @@
+const path = require('path');
 const express = require('express');
 const { baseURL } = require('./utils/consts');
+
 
 //const cors = require('cors');
 
@@ -21,5 +23,7 @@ app.use(`${baseURL}/users`, require('./routers/user'));
 app.use(`${baseURL}/workshops`, require('./routers/workshop'));
 app.use(`${baseURL}/teachers`, require('./routers/teacher'));
 app.use(`${baseURL}/statics`, require('./routers/static'));
+
+app.use(`${baseURL}/uploads`, express.static(path.join(__dirname, '../../uploads')))
 
 module.exports = app;

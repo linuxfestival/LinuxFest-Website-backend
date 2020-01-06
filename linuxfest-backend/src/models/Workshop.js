@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Teacher = require('./Teacher');
 
+const { baseURL } = require('../utils/consts');
+
 const schema = mongoose.Schema({
     capacity: {
         type: Number,
@@ -79,6 +81,24 @@ schema.pre("save", async function (next) {
     }
     next();
 });
+
+schema.methods.toJSON = function () {
+    const workshop = this;
+    const workshopObject = workshop.toObject();
+    const url = `/uploads/${process.env.SITE_VERSION}/workshops/${workshopObject._id}`;
+    if (workshopObject.picPath) {
+        workshopObject.picUrl = url + '/mainPic.png';
+    }
+    if (workshopObject.album.length) {
+        workshopObject.albumUrls = [];
+        for (const pic of workshop.album) {
+            workshopObject.albumUrls = workshopObject.albumUrls.concat(url + "/album/" + pic._id + ".png");
+        }
+    }
+    delete workshopObject.picPath;
+    delete workshopObject.album;
+    return workshopObject;
+};
 
 const Workshop = new mongoose.model('Workshop', schema);
 

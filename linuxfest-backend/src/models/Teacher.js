@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const persianize = require('persianize');
 
+const { baseURL } = require('../utils/consts');
+
 const schema = mongoose.Schema({
     fullName: {
         type: String,
@@ -30,6 +32,19 @@ schema.virtual('workshops', {
     localField: '_id',
     foreignField: 'teachers.teacher'
 })
+
+schema.methods.toJSON = function () {
+    const teacher = this;
+    const teacherObject = teacher.toObject();
+
+    const url = `/uploads/${process.env.SITE_VERSION}/teachers/${teacherObject._id}/mainPic.png`;
+    if (teacherObject.imagePath) {
+        delete teacherObject.imagePath;
+        teacherObject.picUrl = url;
+    }
+
+    return teacherObject;
+};
 
 const Teacher = new mongoose.model('Teacher', schema);
 
