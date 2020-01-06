@@ -19,7 +19,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const validFields = ["capacity", "title", "price", "isRegOpen", "description", "startTime", "endTime", "teachers"];
+        const validFields = ["capacity", "title", "price", "isRegOpen", "description", "times", "teachers"];
         const finalBody = {};
         validFields.forEach(field => {
             finalBody[field] = req.body[field];
@@ -122,7 +122,7 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'startTime', 'endTime'];
+        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'times'];
         const updates = Object.keys(req.body);
         if (!updates.every(element => validUpdates.includes(element))) {
             res.status(400).send();

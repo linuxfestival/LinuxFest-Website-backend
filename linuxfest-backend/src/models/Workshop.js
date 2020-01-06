@@ -36,14 +36,16 @@ const schema = mongoose.Schema({
         type: String,
         required: true
     },
-    startTime: {
-        type: Date,
-        required: true
-    },
-    endTime: {
-        type: Date,
-        required: true
-    },
+    times: [{
+        startTime: {
+            type: Date,
+            required: true
+        },
+        endTime: {
+            type: Date,
+            required: true
+        }
+    }],
     participantsNumber: {
         type: Number,
         default: 0
