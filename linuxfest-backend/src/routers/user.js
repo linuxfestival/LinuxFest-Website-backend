@@ -7,8 +7,8 @@ const User = require('../models/User');
 const Workshop = require('../models/Workshop');
 const auth = require('../express_middlewares/userAuth');
 
-const { initPaymentUrl } = require('../utils/consts');
-const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils');
+const { initPaymentUrl, verifyPaymentUrl } = require('../utils/consts');
+const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail, redirectTo } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
 
@@ -217,10 +217,10 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 
 // Payment
 
-async function initPayment(user, workshops, workshopIds) {
+async function initPayment(user, workshops, workshopId) {
     const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
     const orderId = parseInt(user._id, 16) % rand;
-    user.orderIDs = user.orderIDs.concat({ workshopIds, idNumber: orderId });
+    user.orderIDs = user.orderIDs.concat({ workshopId, idNumber: orderId });
     await user.save();
 
     let price = 0;
@@ -242,7 +242,7 @@ async function initPayment(user, workshops, workshopIds) {
         Amount: price,
         OrderId: orderId,
         LocalDateTime: new Date(),
-        ReturnUrl: "http://45.147.76.80/return",
+        ReturnUrl: `${process.env.BACK_SERVER}/users/verifypayment`,
         SignData: SignData,
         PaymentIdentity: process.env.PAYMENT_IDENTITY
     }
@@ -250,7 +250,6 @@ async function initPayment(user, workshops, workshopIds) {
     console.log(data);
 
     const response = await axios.post(initPaymentUrl, data);
-    console.log(response.data);
     return response;
 }
 
@@ -283,8 +282,101 @@ router.post('/initPayment', auth, async (req, res) => {
     } catch (err) {
         res.status(400).send();
     }
+
     try {
-        res.send((await initPayment(req.user, workshops, req.body.workshopIds)).data);
+        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds)).data;
+        console.log("BUG");
+        if (sadadRes.ResCode === "0") {
+            res.send(sadadRes.token);
+        } else {
+            res.status(400).send(sadadRes.Description);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+async function verifySadad(data) {
+    const sadadRes = await axios.post(verifyPaymentUrl, data).data;
+    return sadadRes;
+}
+
+router.post('/verifypayment', async (req, res) => {
+    try {
+        if (req.body.ResCode !== "0") {
+            redirectTo(res, process.env.site, { status: "BAD" });
+        }
+        const user = await User.findOne({
+            OrderIDs: {
+                idNumber: req.body.OrderId
+            }
+        });
+        if (!user) {
+            redirectTo(res, process.env.site, { status: "BAD" });
+        }
+
+        let order;
+        for (const oi of user.OrderIDs) {
+            if (oi.idNumber === req.body.OrderId) {
+                order = oi;
+                break;
+            }
+        }
+
+        let price = 0;
+        for (const workshop of order.workshopId) {
+            const ws = await Workshop.findById(workshop);
+            if (!ws) {
+                redirectTo(res, process.env.site, { status: "BAD" });
+            }
+            price += ws.price;
+        }
+
+        const sign = process.env.TERMINAL_ID + ";" + req.body.OrderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
+        const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.Pkcs7
+        }).toString();
+
+        const data = {
+            Token: req.body.Token,
+            SignData
+        };
+
+
+        const now = (new Date()).getTime();
+        const interval = setInterval(async () => {
+            const sadadRes = await verifySadad(data);
+            if (sadadRes) {
+                clearInterval(interval);
+                if (sadadRes.ResCode !== "0") {
+                    redirectTo(res, process.env.site, { status: "BAD" });
+                }
+
+                user.orders = user.orders.concat({
+                    ...sadadRes,
+                    workshopIds: order.workshopId
+                });
+
+                for (const workshop of order.workshopId) {
+                    user.workshops = user.workshops.concat({ workshop });
+                }
+
+                user.OrderIDs = user.OrderIDs.splice(user.OrderIDs.indexOf(order), 1);
+
+                await user.save();
+
+                redirectTo(res, process.env.site, {
+                    status: "GOOD",
+                    Amount: sadadRes.Amount,
+                    RetrivalRefNo: sadadRes.RetrivalRefNo,
+                    SystemTraceNo: sadadRes.SystemTraceNo
+                });
+            } else if ((new Date()).getTime() - now > 10000) {
+                clearInterval(interval);
+                redirectTo(res, process.env.site, { status: "BAD" });
+            }
+        }, 2000);
     } catch (err) {
         res.status(500).send();
     }

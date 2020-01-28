@@ -52,8 +52,13 @@ async function sendForgetPasswordEmail(user, token) {
     });
 }
 
+function redirectTo(res, url, data) {
+    res.redirect(url + "?data=" + JSON.stringify(data));
+}
+
 module.exports = {
     checkPermission,
     sendWelcomeEmail,
-    sendForgetPasswordEmail
+    sendForgetPasswordEmail,
+    redirectTo
 }

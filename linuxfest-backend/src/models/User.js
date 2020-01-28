@@ -112,6 +112,36 @@ const schema = new mongoose.Schema({
       type: mongoose.Types.ObjectId,
       required: true
     }]
+  }],
+  orders: [{
+    ResCode: {
+      type: Number,
+      required: true
+    },
+    Amount: {
+      type: Number,
+      required: true
+    },
+    Description: {
+      type: String,
+      required: true
+    },
+    RetrivalRefNo: {
+      type: String,
+      required: true
+    },
+    SystemTraceNo: {
+      type: String,
+      required: true
+    },
+    OrderId: {
+      type: Number,
+      required: true
+    },
+    WorkshopIds: [{
+      type: mongoose.Types.ObjectId,
+      required: true
+    }]
   }]
 }, {
   timestamps: true
