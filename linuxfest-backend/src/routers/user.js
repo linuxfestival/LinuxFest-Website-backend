@@ -253,8 +253,9 @@ async function initPayment(user, workshops, workshopId) {
     return response;
 }
 
-router.post('/initPayment', auth, async (req, res) => {
+router.post('/initpayment', auth, async (req, res) => {
     let workshops = [];
+    console.log("Init");
     try {
         for (const workshopId of req.body.workshopIds) {
             const workshop = await Workshop.findById(workshopId);
@@ -280,12 +281,13 @@ router.post('/initPayment', auth, async (req, res) => {
 
         }
     } catch (err) {
-        res.status(400).send();
+        res.status(400).send(err.message);
     }
 
     try {
         const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds)).data;
         console.log("BUG");
+        console.log("../log.tst", "DONE:   " + sadadRes + "\n\n");
         if (sadadRes.ResCode === "0") {
             res.send(sadadRes.token);
         } else {

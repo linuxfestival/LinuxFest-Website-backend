@@ -22,11 +22,11 @@ async function authCheckUser(req) {
 }
 
 const userAuth = async (req, res, next) => {
-        if (await authCheckUser(req)) {
-            next();
-        } else {
-            res.status(401).send('Please authenticate');
-        }
+    if (await authCheckUser(req)) {
+        next();
+    } else {
+        res.status(401).send('Please authenticate');
+    }
 }
 
 module.exports = userAuth;
