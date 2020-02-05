@@ -242,7 +242,7 @@ async function initPayment(user, workshops, workshopId) {
         Amount: price,
         OrderId: orderId,
         LocalDateTime: new Date(),
-        ReturnUrl: `${process.env.BACK_SERVER}/users/verifypayment`,
+        ReturnUrl: `${process.env.BACK_SERVER}users/verifypayment`,
         SignData: SignData,
         PaymentIdentity: process.env.PAYMENT_IDENTITY
     }
@@ -287,9 +287,9 @@ router.post('/initpayment', auth, async (req, res) => {
     try {
         const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds)).data;
         console.log("BUG");
-        console.log("../log.tst", "DONE:   " + sadadRes + "\n\n");
+        console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
         if (sadadRes.ResCode === "0") {
-            res.send(sadadRes.token);
+            res.send(sadadRes.Token);
         } else {
             res.status(400).send(sadadRes.Description);
         }
@@ -299,27 +299,30 @@ router.post('/initpayment', auth, async (req, res) => {
 });
 
 async function verifySadad(data) {
-    const sadadRes = await axios.post(verifyPaymentUrl, data).data;
+    const sadadRes = (await axios.post(verifyPaymentUrl, data)).data;
     return sadadRes;
 }
 
 router.post('/verifypayment', async (req, res) => {
+    const url = "payment/result"
+
     try {
+
         if (req.body.ResCode !== "0") {
-            redirectTo(res, process.env.site, { status: "BAD" });
+            redirectTo(res, process.env.SITE + url, { status: "BAD", stage: `inital res code non 0  wtf is this:${req.body.ResCode}` });
+            return;
         }
         const user = await User.findOne({
-            OrderIDs: {
-                idNumber: req.body.OrderId
-            }
+            "orderIDs.idNumber": req.body.OrderId
         });
         if (!user) {
-            redirectTo(res, process.env.site, { status: "BAD" });
+            redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "user not found wtf??" });
+            return;
         }
 
         let order;
-        for (const oi of user.OrderIDs) {
-            if (oi.idNumber === req.body.OrderId) {
+        for (const oi of user.orderIDs) {
+            if (oi.idNumber == req.body.OrderId) {
                 order = oi;
                 break;
             }
@@ -329,58 +332,80 @@ router.post('/verifypayment', async (req, res) => {
         for (const workshop of order.workshopId) {
             const ws = await Workshop.findById(workshop);
             if (!ws) {
-                redirectTo(res, process.env.site, { status: "BAD" });
+                redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "workshop not found :| !" });
+                return;
             }
             price += ws.price;
         }
 
-        const sign = process.env.TERMINAL_ID + ";" + req.body.OrderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
-        const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
+        const SignData = CryptoJS.TripleDES.encrypt(req.body.token, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.Pkcs7
         }).toString();
-
+        
         const data = {
-            Token: req.body.Token,
-            SignData
+            Token: req.body.token,
+            SignData: SignData
         };
+
+        console.log("verify payload: " + JSON.stringify(data));
 
 
         const now = (new Date()).getTime();
         const interval = setInterval(async () => {
-            const sadadRes = await verifySadad(data);
-            if (sadadRes) {
-                clearInterval(interval);
-                if (sadadRes.ResCode !== "0") {
-                    redirectTo(res, process.env.site, { status: "BAD" });
+            try {
+                const sadadRes = await verifySadad(data);
+
+                if (sadadRes) {
+                    clearInterval(interval);
+
+                    if (sadadRes.ResCode !== "0") {
+                        redirectTo(res, process.env.SITE + url, { status: "BAD", stage: `verify res code non 0 its ${sadadRes.ResCode}` });
+                        return;
+                    }
+
+                    user.orders = user.orders.concat({
+                        ...sadadRes,
+                        workshopIds: order.workshopId
+                    });
+
+                    for (const workshop of order.workshopId) {
+                        user.workshops = user.workshops.concat({ workshop });
+                    }
+
+                    user.orderIDs = user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
+                    try {
+                        await user.save();
+                    } catch (err) {
+                        console.error(JSON.stringify(err));
+                        clearInterval(interval);
+                        redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "User save problem" });
+                        return;
+                    }
+
+                    redirectTo(res, process.env.SITE + url, {
+                        status: "GOOD",
+                        Amount: sadadRes.Amount,
+                        RetrivalRefNo: sadadRes.RetrivalRefNo,
+                        SystemTraceNo: sadadRes.SystemTraceNo
+                    });
+                    return;
+                } else if ((new Date()).getTime() - now > 10000) {
+                    clearInterval(interval);
+                    redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "Time out" });
+                    return;
                 }
-
-                user.orders = user.orders.concat({
-                    ...sadadRes,
-                    workshopIds: order.workshopId
-                });
-
-                for (const workshop of order.workshopId) {
-                    user.workshops = user.workshops.concat({ workshop });
-                }
-
-                user.OrderIDs = user.OrderIDs.splice(user.OrderIDs.indexOf(order), 1);
-
-                await user.save();
-
-                redirectTo(res, process.env.site, {
-                    status: "GOOD",
-                    Amount: sadadRes.Amount,
-                    RetrivalRefNo: sadadRes.RetrivalRefNo,
-                    SystemTraceNo: sadadRes.SystemTraceNo
-                });
-            } else if ((new Date()).getTime() - now > 10000) {
+            } catch (err) {
+                console.error(err.message);
                 clearInterval(interval);
-                redirectTo(res, process.env.site, { status: "BAD" });
+                redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "Sadad req error" });
+                return;
             }
         }, 2000);
     } catch (err) {
-        res.status(500).send();
+        console.error(err.message);
+        console.error(err);
+        res.status(500).send(err.message);
     }
 });
 
