@@ -246,7 +246,16 @@ async function initPayment(user, workshops, workshopId, discountCode) {
     } catch (err) {
         console.log(err.message);
     }
-
+    if(price === 0){
+      // TODO: Add user to workshops
+      try {
+        workshops.forEach(workshop => user.workshops = user.workshops.concat(workshop));
+        await user.save();
+      } catch (err){
+        console.log(err.message);
+      }
+      return {data : undefined};
+    }
     const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
 
     const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
@@ -305,6 +314,9 @@ router.post('/initpayment', auth, async (req, res) => {
 
     try {
         const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount)).data;
+        if(!sadadRes){
+          res.send("OK");
+        }
         console.log("BUG");
         console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
         if (sadadRes.ResCode === "0") {
