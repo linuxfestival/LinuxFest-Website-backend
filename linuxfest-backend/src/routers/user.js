@@ -231,6 +231,9 @@ async function initPayment(user, workshops, workshopId, discountCode) {
     try {
         if (discountCode) {
             const discount = await Discount.findByCode(discountCode);
+            if(!discount){
+                throw new Error("Discount not found");
+            }
             if(discount.count > 0 || discount.count === -1){
                 if(discount.count > 0){
                     discount.count--;

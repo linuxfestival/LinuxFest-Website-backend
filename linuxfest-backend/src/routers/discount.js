@@ -1,10 +1,19 @@
 const express = require('express');
+
+
 const Discount = require('../models/Discount');
+
+const { checkPermission } = require('../utils/utils');
+const { authenticateAdmin } = require('../express_middlewares/adminAuth');
+
 
 
 const router = new express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'getWorkshop', res)) {
+        return;
+    }
     try {
         res.send((await Discount.find({})));
     } catch (err) {
@@ -12,7 +21,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'addWorkshop', res)) {
+        return;
+    }
     try {
         const discount = new Discount(req.body);
         await discount.save();
@@ -22,7 +34,10 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'editWorkshop', res)) {
+        return;
+    }
     const updates = Object.keys(req.body);
     const allowedUpdates = ['percentage', 'code', 'count'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
@@ -39,7 +54,10 @@ router.patch('/:id', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, 'deleteWorkshop', res)) {
+        return;
+    }
     try {
         const discount = Discount.findById(req.params.id);
         await Discount.deleteOne(discount);
