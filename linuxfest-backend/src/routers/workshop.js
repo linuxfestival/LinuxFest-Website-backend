@@ -27,7 +27,6 @@ router.post('/', authenticateAdmin, async (req, res) => {
         const workshop = new Workshop(finalBody);
         for (const obj of workshop.teachers) {
             const id = obj.id;
-            console.log(id);
             const teacher = await Teacher.findById(id);
             if (!teacher) {
                 res.status(404).send("Teacher not found");
@@ -52,9 +51,11 @@ router.get("/manage", authenticateAdmin, async (req, res) => {
         let result = [];
         for (const workshop of workshops) {
             await workshop.populate('participants').execPopulate()
+            const count = await workshop.participantsCount;
             result = result.concat({
                 workshop,
-                participants: workshop.participants
+                participants: workshop.participants,
+                participantsCount: count
             });
         }
 
@@ -91,7 +92,8 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
             teachers = teachers.concat(await Teacher.findById(teacher.id));
         }
 
-        res.send({ workshop, participants: workshop.participants, teachers });
+        const count = await workshop.participantsCount;
+        res.send({ workshop, participants: workshop.participants, teachers, participantsCount: count });
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -175,10 +177,11 @@ router.put('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, re
             res.status(404).send();
             return;
         }
-        console.log(user.workshops);
-
-        user.workshops = user.workshops.concat({ workshop: workshop._id });
-        await user.save();
+        if (workshop.isRegOpen) {
+            user.workshops = user.workshops.concat({ workshop: workshop._id });
+            await user.save();
+            await workshop.save();
+        }
         res.status(200).send();
     } catch (err) {
         res.status(500).send(err);
@@ -200,7 +203,6 @@ router.delete('/manage/:workshopId/user/:userId', authenticateAdmin, async (req,
             res.status(404).send();
             return;
         }
-        console.log(user.workshops);
 
         user.workshops = user.workshops.filter(val => {
             return val._id === workshop._id;

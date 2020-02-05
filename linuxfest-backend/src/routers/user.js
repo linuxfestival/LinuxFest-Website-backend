@@ -218,7 +218,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 
 // Payment
 
-async function initPayment(user, workshops, workshopId, discountCode) {
+async function initPayment(user, workshops, workshopId, discountCode, res) {
     const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
     const orderId = parseInt(user._id, 16) % rand;
     user.orderIDs = user.orderIDs.concat({ workshopId, idNumber: orderId });
@@ -248,11 +248,19 @@ async function initPayment(user, workshops, workshopId, discountCode) {
     }
     if (price === 0) {
         try {
-            workshops.forEach(workshop => user.workshops = user.workshops.concat({ workshop: workshop._id }));
+            for (const workshop of workshops) {
+                user.workshops = user.workshops.concat({ workshop: workshop._id })
+            }
             await user.save();
+            for (const workshop of workshops) {
+                await workshop.save();
+            }
         } catch (err) {
             console.log(err.message);
+            res.status(400).send(`Error ${err.message}`);
+            return { data: undefined };
         }
+        res.send("OK");
         return { data: undefined };
     }
     const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
@@ -275,9 +283,13 @@ async function initPayment(user, workshops, workshopId, discountCode) {
     }
 
     console.log(data);
-
-    const response = await axios.post(initPaymentUrl, data);
-    return response;
+    try {
+        const response = await axios.post(initPaymentUrl, data);
+        return response;
+    } catch (err) {
+        res.status(500).send(err.message);
+        return;
+    }
 }
 
 router.post('/initpayment', auth, async (req, res) => {
@@ -312,9 +324,8 @@ router.post('/initpayment', auth, async (req, res) => {
     }
 
     try {
-        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount)).data;
+        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)).data;
         if (!sadadRes) {
-            res.send("OK");
             return;
         }
         console.log("BUG");
@@ -397,6 +408,9 @@ router.post('/verifypayment', async (req, res) => {
                     user.orderIDs = user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
                     try {
                         await user.save();
+                        for (const workshop of order.workshopId) {
+                            await (await Workshop.findById(workshop)).save();
+                        }
                     } catch (err) {
                         console.error(JSON.stringify(err));
                         clearInterval(interval);

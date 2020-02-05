@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const Teacher = require('./Teacher');
 
-const { baseURL } = require('../utils/consts');
-
 const schema = mongoose.Schema({
     capacity: {
         type: Number,
@@ -48,10 +46,6 @@ const schema = mongoose.Schema({
             required: true
         }
     }],
-    participantsNumber: {
-        type: Number,
-        default: 0
-    },
     teachers: [{
         id: {
             type: mongoose.Types.ObjectId,
@@ -69,6 +63,11 @@ schema.virtual('participants', {
     foreignField: 'workshops.workshop'
 });
 
+schema.virtual('participantsCount').get(async function() {
+    // console.log(await this.populate('participants').execPopulate().participants);
+    return (await this.populate('participants').execPopulate()).participants.length;
+});
+
 schema.pre("save", async function (next) {
     const workshop = this;
 
@@ -77,6 +76,11 @@ schema.pre("save", async function (next) {
             const id = obj.id;
             const teacher = await Teacher.findById(id);
             obj.name = teacher.fullName
+        }
+    }
+    if (!this.isNew) {
+        if ((await workshop.participantsCount) >= workshop.capacity) {
+            workshop.isRegOpen = false;
         }
     }
     next();
@@ -95,6 +99,7 @@ schema.methods.toJSON = function () {
             workshopObject.albumUrls = workshopObject.albumUrls.concat(url + "/album/" + pic._id + ".png");
         }
     }
+    
     delete workshopObject.picPath;
     delete workshopObject.album;
     return workshopObject;
