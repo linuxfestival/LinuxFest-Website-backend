@@ -147,6 +147,12 @@ router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
         res.status(404).send();
         return;
     }
+    await workshop.populate('participants').execPopulate();
+
+    for (const participant of workshop.participants) {
+        participant.workshops.splice(participant.workshops.indexOf({ workshop: req.params.id }), 1);
+        await participant.save();
+    }
 
     await Workshop.deleteOne(workshop);
     await workshop.save();

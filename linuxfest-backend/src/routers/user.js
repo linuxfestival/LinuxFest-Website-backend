@@ -231,30 +231,29 @@ async function initPayment(user, workshops, workshopId, discountCode) {
     try {
         if (discountCode) {
             const discount = await Discount.findByCode(discountCode);
-            if(!discount){
+            if (!discount) {
                 throw new Error("Discount not found");
             }
-            if(discount.count > 0 || discount.count === -1){
-                if(discount.count > 0){
+            if (discount.count > 0 || discount.count === -1) {
+                if (discount.count > 0) {
                     discount.count--;
                     await discount.save();
                 }
-                price *= ((discount.percentage)/100);
+                price *= ((discount.percentage) / 100);
                 price = Math.floor(price);
             }
         }
     } catch (err) {
         console.log(err.message);
     }
-    if(price === 0){
-      // TODO: Add user to workshops
-      try {
-        workshops.forEach(workshop => user.workshops = user.workshops.concat(workshop));
-        await user.save();
-      } catch (err){
-        console.log(err.message);
-      }
-      return {data : undefined};
+    if (price === 0) {
+        try {
+            workshops.forEach(workshop => user.workshops = user.workshops.concat({ workshop: workshop._id }));
+            await user.save();
+        } catch (err) {
+            console.log(err.message);
+        }
+        return { data: undefined };
     }
     const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
 
@@ -314,8 +313,9 @@ router.post('/initpayment', auth, async (req, res) => {
 
     try {
         const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount)).data;
-        if(!sadadRes){
-          res.send("OK");
+        if (!sadadRes) {
+            res.send("OK");
+            return;
         }
         console.log("BUG");
         console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
