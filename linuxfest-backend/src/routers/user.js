@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
 const Workshop = require('../models/Workshop');
+const Discount = require('../models/Discount');
 const auth = require('../express_middlewares/userAuth');
 
 const { initPaymentUrl, verifyPaymentUrl } = require('../utils/consts');
@@ -217,7 +218,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
 
 // Payment
 
-async function initPayment(user, workshops, workshopId) {
+async function initPayment(user, workshops, workshopId, discountCode) {
     const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
     const orderId = parseInt(user._id, 16) % rand;
     user.orderIDs = user.orderIDs.concat({ workshopId, idNumber: orderId });
@@ -227,6 +228,21 @@ async function initPayment(user, workshops, workshopId) {
     workshops.forEach(workshop => {
         price += workshop.price;
     });
+    try {
+        if (discountCode) {
+            const discount = await Discount.findByCode(discountCode);
+            if(discount.count > 0 || discount.count === -1){
+                if(discount.count > 0){
+                    discount.count--;
+                    await discount.save();
+                }
+                price *= ((discount.percentage)/100);
+                price = Math.floor(price);
+            }
+        }
+    } catch (err) {
+        console.log(err.message);
+    }
 
     const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
 
@@ -285,7 +301,7 @@ router.post('/initpayment', auth, async (req, res) => {
     }
 
     try {
-        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds)).data;
+        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount)).data;
         console.log("BUG");
         console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
         if (sadadRes.ResCode === "0") {
@@ -328,21 +344,11 @@ router.post('/verifypayment', async (req, res) => {
             }
         }
 
-        let price = 0;
-        for (const workshop of order.workshopId) {
-            const ws = await Workshop.findById(workshop);
-            if (!ws) {
-                redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "workshop not found :| !" });
-                return;
-            }
-            price += ws.price;
-        }
-
         const SignData = CryptoJS.TripleDES.encrypt(req.body.token, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
             mode: CryptoJS.mode.ECB,
             padding: CryptoJS.pad.Pkcs7
         }).toString();
-        
+
         const data = {
             Token: req.body.token,
             SignData: SignData

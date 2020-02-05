@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
 const persianize = require('persianize');
 
-const { baseURL } = require('../utils/consts');
-
 const schema = mongoose.Schema({
     fullName: {
         type: String,
