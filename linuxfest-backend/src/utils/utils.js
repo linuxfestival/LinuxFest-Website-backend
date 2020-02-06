@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const CryptoJS = require('crypto-js');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -53,7 +54,8 @@ async function sendForgetPasswordEmail(user, token) {
 }
 
 function redirectTo(res, url, data) {
-    res.redirect(url + "?data=" + JSON.stringify(data));
+    const dt = CryptoJS.AES.encrypt(JSON.stringify(data), "simple-secret").toString();
+    res.redirect(url + "?data=" + dt);
 }
 
 module.exports = {
