@@ -13,14 +13,17 @@ const app = require('./app');
 require('../db/mongoose');
 
 const PORT = process.env.PORT;
+const debug = process.env.DEBUG;
 
-app.get("/log", async (req, res) => {
-    try {
-        res.send(fs.readFileSync(path.join(__dirname, "../logs/out-0.log")).toString());
-    } catch (err) {
-        res.status(404).send("Cannot find log file");
-    }
-});
+if (debug === "1") {
+    app.get("/log", async (req, res) => {
+        try {
+            res.send(fs.readFileSync(path.join(__dirname, "../logs/out-0.log")).toString());
+        } catch (err) {
+            res.status(404).send("Cannot find log file");
+        }
+    });
+}
 
 app.listen(PORT, () => {
     console.log('Server is up and running on port: ' + PORT);
