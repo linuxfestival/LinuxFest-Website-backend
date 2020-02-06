@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const nodemailer = require("nodemailer");
 const CryptoJS = require('crypto-js');
 
@@ -20,12 +22,17 @@ function checkPermission(admin, perm, res) {
 }
 
 async function sendWelcomeEmail(user) {
+    let html;
+    try {
+        html = fs.readFileSync("./ignore/register.html").toString();
+    } catch (err) {
+        html = "Welcome to linuxfest";
+    }
     const mailOptions = {
         from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
         to: user.email,
         subject: 'Welcome to Linux Festival!',
-        text:
-            `Hello 'n Welcome\n why are you linux dear ${user.firstName} ${user.lastName}??`
+        html: html
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -37,12 +44,21 @@ async function sendWelcomeEmail(user) {
 }
 
 async function sendForgetPasswordEmail(user, token) {
+
+    let html;
+    const link = `${process.env.SITE}user/forget/${token}`
+    try {
+        html = fs.readFileSync("./ignore/password.html").toString();
+        html = html.replace("<<<LINK_TO_RESET>>>", link);
+    } catch (err) {
+        html = link;
+    }
+
     const mailOptions = {
         from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
         to: user.email,
         subject: 'Password reset',
-        text:
-            `Hello 'n Welcome\nDear ${user.firstName} ${user.lastName}\nFollow this link to reset your password: ${process.env.SITE}user/forget/${token}`
+        html: html
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
