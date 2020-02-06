@@ -188,9 +188,6 @@ schema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
 
-  console.log(user);
-
-
   delete userObject.password;
   delete userObject.tokens;
   delete userObject.forgotTokens;

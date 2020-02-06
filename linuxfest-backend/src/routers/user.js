@@ -175,16 +175,18 @@ router.patch('/:id', authenticateAdmin, async (req, res) => {
 
 router.patch('/forget/:token', async (req, res) => {
     try {
-        const decodedEmail = jwt.verify(req.params.token, process.env.JWT_SECRET);
+        const decodedEmail = jwt.verify(req.params.token, process.env.JWT_SECRET).email;
         const user = await User.findOne({ email: decodedEmail, 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
             res.status(404).send();
             return;
         }
         user.password = req.body.password;
-
+        user.forgotTokens.splice(user.forgotTokens.indexOf(user.forgotTokens.find(x => x.forgotToken === req.params.token)), 1);
         await user.save();
-        res.status(200).send({ user });
+
+
+        res.status(200).send(user);
     } catch (error) {
         res.status(500).send({ error: error.message });
     }
@@ -304,16 +306,25 @@ router.post('/initpayment', auth, async (req, res) => {
             }
             try {
                 //Check capacity
+                let flag = true;
                 await workshop.populate('participants').execPopulate();
                 if (workshop.participants.length >= workshop.capacity) {
                     workshop.isRegOpen = false;
                     await workshop.save();
                 }
                 if (!workshop.isRegOpen) {
-                    res.status(400).send(`Workshop ${workshopId} is full`);
-                    return;
+                    flag = false;
                 }
-                workshops = workshops.concat(workshop);
+
+                //Check already in or not
+                for (const wsId of req.user.workshops) {
+                    if (wsId.workshop == workshopId) {
+                        flag = false;
+                    }
+                }
+                if (flag) {
+                    workshops = workshops.concat(workshop);
+                }
             } catch (err) {
                 res.status(500).send({ msg: err.message, err });
             }
@@ -322,21 +333,24 @@ router.post('/initpayment', auth, async (req, res) => {
     } catch (err) {
         res.status(400).send(err.message);
     }
-
-    try {
-        const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)).data;
-        if (!sadadRes) {
-            return;
+    if (workshops.length !== 0) {
+        try {
+            const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)).data;
+            if (!sadadRes) {
+                return;
+            }
+            console.log("BUG");
+            console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
+            if (sadadRes.ResCode === "0") {
+                res.send(sadadRes.Token);
+            } else {
+                res.status(400).send(sadadRes.Description);
+            }
+        } catch (err) {
+            res.status(500).send(err.message);
         }
-        console.log("BUG");
-        console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
-        if (sadadRes.ResCode === "0") {
-            res.send(sadadRes.Token);
-        } else {
-            res.status(400).send(sadadRes.Description);
-        }
-    } catch (err) {
-        res.status(500).send(err.message);
+    } else {
+        res.status(400).send("No available workshop to register");
     }
 });
 
@@ -405,7 +419,7 @@ router.post('/verifypayment', async (req, res) => {
                         user.workshops = user.workshops.concat({ workshop });
                     }
 
-                    user.orderIDs = user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
+                    user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
                     try {
                         await user.save();
                         for (const workshop of order.workshopId) {
