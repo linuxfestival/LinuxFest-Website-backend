@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const express = require('express');
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
@@ -255,6 +257,7 @@ async function initPayment(user, workshops, workshopId, discountCode, res) {
             }
             await user.save();
             for (const workshop of workshops) {
+                fs.appendFileSync("./ignore/register.log", `${user.email} : ${workshop.title}\n`);
                 await workshop.save();
             }
         } catch (err) {
@@ -423,7 +426,9 @@ router.post('/verifypayment', async (req, res) => {
                     try {
                         await user.save();
                         for (const workshop of order.workshopId) {
-                            await (await Workshop.findById(workshop)).save();
+                            const workshopObj = await Workshop.findById(workshop);
+                            fs.writeFileSync("./ignore/register.log", `${user.email} : ${workshopObj.title}\n`);
+                            await workshopObj.save();
                         }
                     } catch (err) {
                         console.error(JSON.stringify(err));

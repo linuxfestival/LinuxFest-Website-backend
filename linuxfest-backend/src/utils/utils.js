@@ -24,7 +24,7 @@ function checkPermission(admin, perm, res) {
 async function sendWelcomeEmail(user) {
     let html;
     try {
-        html = fs.readFileSync("./ignore/register.html").toString();
+        html = fs.readFileSync("./mails/register.html").toString();
     } catch (err) {
         html = "Welcome to linuxfest";
     }
@@ -48,7 +48,7 @@ async function sendForgetPasswordEmail(user, token) {
     let html;
     const link = `${process.env.SITE}user/forget/${token}`
     try {
-        html = fs.readFileSync("./ignore/password.html").toString();
+        html = fs.readFileSync("./mails/password.html").toString();
         html = html.replace("<<<LINK_TO_RESET>>>", link);
     } catch (err) {
         html = link;
