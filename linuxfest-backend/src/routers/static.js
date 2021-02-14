@@ -16,7 +16,7 @@ router.post("/", authenticateAdmin, async (req, res) => {
         await static.save();
         res.status(201).send(static);
     } catch (err) {
-        res.static(400).send(err.message);
+        res.status(400).send(err.message);
     }
 });
 
@@ -25,7 +25,7 @@ router.get("/", async (req, res) => {
         const statics = await Static.find();
         res.send(statics);
     } catch (err) {
-        res.static(500).send(err.message);
+        res.status(500).send(err.message);
     }
 });
 
@@ -111,7 +111,7 @@ router.delete("/find", authenticateAdmin, async (req, res) => {
         }
 
         await Static.deleteOne(static);
-        res.send();
+        res.send(204).end();
     } catch (err) {
         res.status(500).send(err.message);
     }

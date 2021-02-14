@@ -122,20 +122,12 @@ const schema = new mongoose.Schema({
       type: Number,
       required: true
     },
-    Description: {
-      type: String,
-      required: true
-    },
-    RetrivalRefNo: {
-      type: String,
-      required: true
-    },
-    SystemTraceNo: {
-      type: String,
-      required: true
-    },
     OrderId: {
       type: Number,
+      required: true
+    },
+    Authority:{
+      type: String,
       required: true
     },
     WorkshopIds: [{
@@ -162,7 +154,7 @@ schema.statics.findByCredentials = async function (email, password) {
 
 schema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ _id: user._id.toString() }, `${process.env.SIGN_TOKEN}`, {
     expiresIn: "7 days"
   });
 
@@ -174,8 +166,8 @@ schema.methods.generateAuthToken = async function () {
 
 schema.methods.generateForgotToken = async function (email) {
   const user = this;
-  const forgotToken = jwt.sign({ email }, process.env.JWT_SECRET, {
-    expiresIn: "1 day"
+  const forgotToken = jwt.sign({ email }, `${process.env.SIGN_TOKEN}`, {
+    expiresIn: "2 days"
   });
   user.forgotTokens = user.forgotTokens.concat({ forgotToken });
 

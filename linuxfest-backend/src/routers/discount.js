@@ -6,8 +6,6 @@ const Discount = require('../models/Discount');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 
-
-
 const router = new express.Router();
 
 router.get('/', authenticateAdmin, async (req, res) => {
@@ -21,6 +19,17 @@ router.get('/', authenticateAdmin, async (req, res) => {
     }
 });
 
+router.get('/:id',authenticateAdmin, async(req,res)=>{
+    if(!checkPermission(req.admin,'getWorkshop',res)){
+        return;
+    }
+    try {
+        res.send((await Discount.findById(req.params.id)));
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+})
+
 router.post('/', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'addWorkshop', res)) {
         return;
@@ -28,7 +37,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
     try {
         const discount = new Discount(req.body);
         await discount.save();
-        res.send(discount);
+        res.status(201).send(discount);
     } catch (err) {
         res.status(500).send(err.message);
     }
@@ -39,7 +48,7 @@ router.patch('/:id', authenticateAdmin, async (req, res) => {
         return;
     }
     const updates = Object.keys(req.body);
-    const allowedUpdates = ['percentage', 'code', 'count'];
+    const allowedUpdates = ['percentage', 'code', 'count','users'];
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
     if (!isValidOperation) {
         return res.status(400).send({ error: 'invalid updates' });
@@ -61,7 +70,7 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     try {
         const discount = Discount.findById(req.params.id);
         await Discount.deleteOne(discount);
-        res.send();
+        res.status(204).end()
     } catch (err) {
         res.status(500).send(err.message);
     }

@@ -35,7 +35,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
         }
         await workshop.save();
 
-        res.send(workshop)
+        res.status(201).send(workshop)
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
@@ -143,23 +143,18 @@ router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'deleteWorkshop', res)) {
         return;
     }
-
     const workshop = await Workshop.findById(req.params.id);
     if (!workshop) {
         res.status(404).send();
         return;
     }
     await workshop.populate('participants').execPopulate();
-
     for (const participant of workshop.participants) {
         participant.workshops.splice(participant.workshops.indexOf({ workshop: req.params.id }), 1);
         await participant.save();
     }
-
     await Workshop.deleteOne(workshop);
-    await workshop.save();
-
-    res.send(workshop);
+    res.status(204).end()
 });
 
 router.put('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
@@ -229,6 +224,36 @@ const upload = multer({
     }
 });
 
+router.get('/pic/:id',async(req,res)=>{
+    try{
+        if (fs.existsSync(".."+"/uploads/"+process.env.SITE_VERSION+"/workshops/"+req.params.id+"/mainPic.png"))
+        {
+            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+process.env.SITE_VERSION+"/workshops/"+req.params.id+"/mainPic.png"));
+        }
+        else
+        {
+            res.status(404).send({message:"File Not Found"})
+        }
+    }catch(error){
+        res.status(400).send({message:"Internal error"})
+    }
+})
+
+router.get('/pic/:workshop/:id',async(req,res)=>{
+    try{
+        if (fs.existsSync(".."+"/uploads/"+process.env.SITE_VERSION+"/workshops/"+req.params.workshop+"/"+ req.params.id +".png"))
+        {
+            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+process.env.SITE_VERSION+"/workshops/"+req.params.workshop+"/" + req.params.id +".png"));
+        }
+        else
+        {
+            res.status(404).send({message:"File Not Found"})
+        }
+    }catch(error){
+        res.status(400).send({message:"Internal error"})
+    }
+})
+
 router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async (req, res) => {
     if (!checkPermission(req.admin, 'editWorkshop', res)) {
         return;
@@ -243,7 +268,7 @@ router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async
 
         for (const file of req.files) {
             const buffer = await sharp(file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
-            const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album"));
+            const filePath = path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "workshops", req.params.id, "album"));
 
             if (!fs.existsSync(filePath)) {
                 fs.mkdirSync(filePath, { recursive: true }, (err) => {
@@ -288,7 +313,7 @@ router.delete('/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        fs.unlinkSync(path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
+        fs.unlinkSync(path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
             if (err) {
                 throw new Error(err);
             }
@@ -317,7 +342,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
         }
 
         const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
-        const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "workshops", req.params.id));
+        const filePath = path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "workshops", req.params.id));
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {

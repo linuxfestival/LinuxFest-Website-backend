@@ -3,7 +3,7 @@ const express = require('express');
 const SuperUser = require('../models/SuperUser');
 const Workshop = require('../models/Workshop');
 const User = require('../models/User');
-const { checkPermission } = require('../utils/utils');
+const { checkPermission,sendEmail } = require('../utils/utils');
 const {
     authenticateCreateAdmin,
     authenticateAdmin
@@ -12,8 +12,12 @@ const {
 
 const router = new express.Router();
 
+
+//TODO : FIX HERE
 router.post('/', authenticateCreateAdmin, async (req, res) => {
+    console.log('ok')
     try {
+
         if (req.admin && !checkPermission(req.admin, 'addAdmin', res)) {
             return;
         }
@@ -26,12 +30,12 @@ router.post('/', authenticateCreateAdmin, async (req, res) => {
         req.newAdmin.password = req.body.password;
         if (req.admin) {
             const forbiddenPerms = ['addAdmin', 'editAdmin', 'deleteAdmin', 'getAdmin'];
-            const perms = req.body.permissions.filter((element) => {
+            const perms = req.body.admin.permissions.filter((element) => {
                 return !forbiddenPerms.includes(element);
             });
             req.newAdmin.permissions = perms.map(element => { return { permission: element } });
+            console.log(req.newAdmin.permissions)
         }
-
         await req.newAdmin.save();
 
         const token = await req.newAdmin.generateAuthToken();
@@ -41,6 +45,7 @@ router.post('/', authenticateCreateAdmin, async (req, res) => {
         res.status(500).send({ error: err.message });
     }
 });
+
 
 router.post('/login', async (req, res) => {
     try {
@@ -90,6 +95,7 @@ router.get('/admin/all', authenticateAdmin, async (req, res) => {
     }
 });
 
+
 router.get('/search/user', authenticateAdmin, async (req, res) => {
     try {
         let users;
@@ -121,6 +127,7 @@ router.get('/search/user', authenticateAdmin, async (req, res) => {
         res.status(500).send({ error: err.message });
     }
 });
+
 router.get('/search/workshop', authenticateAdmin, async (req, res) => {
     try {
         let workshops;
@@ -166,6 +173,7 @@ router.get('/search/workshop', authenticateAdmin, async (req, res) => {
         res.status(500).send({ error: err.message });
     }
 });
+
 router.patch('/admin/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editAdmin', res)) {
@@ -202,6 +210,7 @@ router.patch('/admin/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+
 router.delete('/admin/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'deleteAdmin', res)) {
@@ -211,12 +220,42 @@ router.delete('/admin/:id', authenticateAdmin, async (req, res) => {
         if (!admin) {
             res.status(404).send();
         }
+
+        if(req.admin == admin){ //same admin shouldn't remove him self
+            res.status(403).send({message:"Same User"})
+            return;
+        }
+
         await SuperUser.deleteOne(admin);
-        await admin.save();
-        res.send(admin);
+        // await admin.save();
+        res.status(204).end()
     } catch (err) {
         res.status(500).send({ error: err.message });
     }
 });
+
+async function asyncForEach(array,callback) {
+  for (let index = 0; index < array.length; index++) {
+    await callback(array[index], index, array);
+  }
+}
+
+router.post('/mailit',authenticateAdmin,async (req,res)=>{
+  const emails = req.body['mails']
+  const subject = req.body['title']
+  const html = req.body['html']
+
+  const start = async () => {
+  await asyncForEach(emails, async (email) => {
+    var temp = await sendEmail(email,subject,html)
+    console.log(temp);
+    });
+  }
+  start().then(()=>{
+    res.send(emails)
+  }).catch((err)=>{
+      res.status(500).send("Something is wrong with mails")
+  });
+})
 
 module.exports = router;

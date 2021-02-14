@@ -20,16 +20,18 @@ async function authenticateCreateAdmin(req, res, next) {
             { permission: "addStatic" },
             { permission: "editStatic" },
             { permission: "deleteStatic" },
+            { permission: "addCompany" },
+            { permission: "editCompany" },
+            { permission: "deleteCompany" },
             { permission: "getAdmin" },
             { permission: "addAdmin" },
             { permission: "editAdmin" },
-            { permission: "deleteAdmin" }
+            { permission: "deleteAdmin" },
         ];
 
         if ((await SuperUser.find()).length === 0) {
             const token = req.header('Authorization').replace('Bearer ', '');
-
-            if (token === process.env.FIRST_ADMIN_SECRET) {
+            if (token === `${process.env.SUPER_TOKEN_SIGN}`) {
                 const admin = new SuperUser({
                     permissions: superManPermissions
                 });
@@ -39,6 +41,7 @@ async function authenticateCreateAdmin(req, res, next) {
                 throw new Error();
             }
         } else {
+            console.log(req.body.admin.permissions)
             await authenticateAdmin(req, res, () => {
                 const admin = new SuperUser({
                     permissions: req.body.admin.permissions
@@ -49,14 +52,13 @@ async function authenticateCreateAdmin(req, res, next) {
             });
         }
     } catch (err) {
-        res.status(401).send({ error: 'Please authenticate.' });
+        res.status(401).send({ error: err });
     }
 }
-
 async function authCheckAdmin(req) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, `${process.env.SIGN_TOKEN}`);
         const admin = await SuperUser.findOne({ _id: decoded._id, 'tokens.token': token });
 
         if (!admin) {

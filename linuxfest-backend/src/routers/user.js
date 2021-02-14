@@ -1,21 +1,75 @@
-const fs = require('fs');
-
 const express = require('express');
-const axios = require('axios');
-const CryptoJS = require('crypto-js');
 const jwt = require('jsonwebtoken');
-
+const ZarinpalCheckout = require('zarinpal-checkout');
+const zarinpal = ZarinpalCheckout.create(`${process.env.ZARIN}`, false);
 const User = require('../models/User');
-const Workshop = require('../models/Workshop');
 const Discount = require('../models/Discount');
 const auth = require('../express_middlewares/userAuth');
-
-const { initPaymentUrl, verifyPaymentUrl } = require('../utils/consts');
-const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail, redirectTo } = require('../utils/utils');
+const Workshop = require('../models/Workshop');
+const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
-
-
 const router = new express.Router();
+
+
+router.get('/verifyPayment',async(req,res)=>{
+    try{
+        zarinpal.PaymentVerification({
+            Amount: req.query.amount,
+            Authority: req.query.Authority
+	    }).then( async(response)=>{
+		if (response.status == 101 || response.status == 100) {
+            console.log("Verified! Ref ID: " + response.RefID);
+            const user = await User.findOne({
+                "orderIDs.idNumber": req.query.order_id
+            });
+            if (!user) {
+                res.status(404).send({message:'Order id not found'})
+                return;
+            }
+            else
+            {
+                //insert workshops
+                let order;
+                for (const oi of user.orderIDs) {
+                    if (oi.idNumber == req.query.order_id) {
+                        order = oi;
+                        break;
+                    }
+                }
+                for (const workshop of order.workshopId) {
+                    user.workshops = user.workshops.concat({ workshop: workshop });
+                }
+
+                //insert to orders history
+                user.orders = user.orders.concat({ResCode:response.status,Amount:req.query.amount,OrderId:req.query.order_id,Authority:req.query.Authority,WorkshopIds:order.workshopId})
+
+
+                user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
+                try{
+                    await user.save();
+                    for (const workshop of order.workshopId) {
+                        const workshopObj = await Workshop.findById(workshop);
+                        await workshopObj.save();
+                    }
+                    res.status(200).send({message:'OK',order:order})
+                } catch(err) {
+                    res.status(500).send({message:'Something is wrong',order:order});
+                    console.error(JSON.stringify(err));
+                    return;
+                }
+            }
+        } else {
+            console.log(response);
+            res.status(406).send({message:'Failed payment'})
+		}
+	}).catch(function (err) {
+        console.log(err);
+        res.status(504).send({message:'Timeout'})
+	})
+    }catch(err){
+        res.status(500).send({message:err})
+    }
+})
 
 async function createUser(req, res) {
     const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber"];
@@ -102,21 +156,6 @@ router.get('/me', auth, async (req, res) => {
     res.send({ user: req.user, workshops });
 });
 
-router.get("/:id", authenticateAdmin, async (req, res) => {
-    if (!checkPermission(req.admin, "getUser", res)) {
-        return;
-    }
-    try {
-        const user = await User.findById(req.params.id);
-        let workshops = [];
-        for (const workshop of user.workshops) {
-            workshops = workshops.concat(await Workshop.findById(workshop.workshop));
-        }
-        res.send({ user, workshops });
-    } catch (err) {
-        res.status(500).send({ error: err.message });
-    }
-});
 
 router.post('/forget', async (req, res) => {
     try {
@@ -130,10 +169,27 @@ router.post('/forget', async (req, res) => {
 
         sendForgetPasswordEmail(user, forgotToken);
 
-        res.status(200).send();
+        res.status(200).send({message:'Email Sent'});
 
     } catch (error) {
         res.status(500).send({ error: error.message });
+    }
+});
+
+
+router.get("/:id", authenticateAdmin, async (req, res) => {
+    if (!checkPermission(req.admin, "getUser", res)) {
+        return;
+    }
+    try {
+        const user = await User.findById(req.params.id);
+        let workshops = [];
+        for (const workshop of user.workshops) {
+            workshops = workshops.concat(await Workshop.findById(workshop.workshop));
+        }
+        res.send({ user, workshops });
+    } catch (err) {
+        res.status(500).send({ error: err.message });
     }
 });
 
@@ -177,30 +233,29 @@ router.patch('/:id', authenticateAdmin, async (req, res) => {
 
 router.patch('/forget/:token', async (req, res) => {
     try {
-        const decodedEmail = jwt.verify(req.params.token, process.env.JWT_SECRET).email;
+        const decodedEmail = jwt.verify(req.params.token, `${process.env.SIGN_TOKEN}`).email;
         const user = await User.findOne({ email: decodedEmail, 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
-            res.status(404).send();
+            res.status(404).send({message:'User Not Found!'});
             return;
         }
         user.password = req.body.password;
         user.forgotTokens.splice(user.forgotTokens.indexOf(user.forgotTokens.find(x => x.forgotToken === req.params.token)), 1);
         await user.save();
-
-
+        
         res.status(200).send(user);
     } catch (error) {
-        res.status(500).send({ error: error.message });
+        res.status(400).send({ error: error.message });
     }
 });
 
 async function userDelete(user, req, res) {
     try {
         await User.deleteOne(user);
-        await user.save();
-        res.send(user);
+        res.status(204).end()
     } catch (error) {
-        res.status(500).send();
+        console.log(error)
+        res.status(500).send({message:"Something is wrong with deleting user"});
     }
 }
 
@@ -215,91 +270,90 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     }
     const user = await User.findById(req.params.id);
     if (!user) {
-        res.status(404).send();
+        res.status(404).send({message:"User Not Found"});
     }
     await userDelete(user, req, res);
+    res.status(204).end()
 });
 
-// Payment
-
-async function initPayment(user, workshops, workshopId, discountCode, res) {
-    const rand = Math.floor(Math.random() * parseInt(process.env.RANDOM_MAX));
-    const orderId = parseInt(user._id, 16) % rand;
-    user.orderIDs = user.orderIDs.concat({ workshopId, idNumber: orderId });
-    await user.save();
-
-    let price = 0;
-    workshops.forEach(workshop => {
-        price += workshop.price;
-    });
-    try {
-        if (discountCode) {
-            const discount = await Discount.findByCode(discountCode);
-            if (!discount) {
-                throw new Error("Discount not found");
-            }
-            if (discount.count > 0 || discount.count === -1) {
-                if (discount.count > 0) {
-                    discount.count--;
-                    await discount.save();
-                }
-                price *= ((discount.percentage) / 100);
-                price = Math.floor(price);
-            }
-        }
-    } catch (err) {
-        console.log(err.message);
-    }
-    if (price === 0) {
+//======================= Payment =======================\\
+async function initPayment(user, workshops,workshopsIds, discountCode, res) {
+    return new Promise(async(resolve,reject)=>{
+        const rand = Math.floor(Math.random() * parseInt(`${process.env.RANDOM}`));
+        const orderId = parseInt(user._id, 16) % rand;
+        user.orderIDs = user.orderIDs.concat({ workshopId:workshopsIds, idNumber: orderId });
+        await user.save();
+        let price = 0;
+        workshops.forEach(workshop => {
+            price += workshop.price;
+        });
         try {
-            for (const workshop of workshops) {
-                user.workshops = user.workshops.concat({ workshop: workshop._id })
-            }
-            await user.save();
-            for (const workshop of workshops) {
-                fs.appendFileSync("./ignore/register.log", `${user.email} : ${workshop.title}\n`);
-                await workshop.save();
+            if (discountCode) {
+                const discount = await Discount.findByCode(discountCode,user._id);
+                if (!discount) {
+                    throw new Error("Discount not found");
+                }
+                if (discount.count > 0 || discount.count === -1) {
+                    if (discount.count > 0) {
+                        discount.count--;
+                        //TODO : move this part into verifypayment
+                        for(var i=0; i<discount.users.length; i++){
+                            if(discount.users[i].user.equals(user._id)){
+                                discount.users[i].isUsed = true;
+                                break;
+                            }
+                        }
+                        await discount.save();
+                    }
+                    let dontPay = price * ((discount.percentage) / 100)
+                    dontPay = Math.floor(dontPay)
+                    price -= dontPay;
+                }
             }
         } catch (err) {
-            console.log(err.message);
-            res.status(400).send(`Error ${err.message}`);
-            return { data: undefined };
+            console.log(err);
         }
-        res.send("OK");
-        return { data: undefined };
-    }
-    const sign = process.env.TERMINAL_ID + ";" + orderId.toLocaleString('fullwide', { useGrouping: false }) + ";" + price.toLocaleString('fullwide', { useGrouping: false });
-
-    const SignData = CryptoJS.TripleDES.encrypt(sign, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
-        mode: CryptoJS.mode.ECB,
-        padding: CryptoJS.pad.Pkcs7
-    }).toString();
-    console.log(SignData);
-
-    const data = {
-        MerchantId: process.env.MERCHANT_ID,
-        TerminalId: process.env.TERMINAL_ID,
-        Amount: price,
-        OrderId: orderId,
-        LocalDateTime: new Date(),
-        ReturnUrl: `${process.env.BACK_SERVER}users/verifypayment`,
-        SignData: SignData,
-        PaymentIdentity: process.env.PAYMENT_IDENTITY
-    }
-
-    console.log(data);
-    try {
-        const response = await axios.post(initPaymentUrl, data);
-        return response;
-    } catch (err) {
-        res.status(500).send(err.message);
-        return;
-    }
+        if (price === 0) {
+            try {
+                for (const workshop of workshops) {
+                    user.workshops = user.workshops.concat({ workshop: workshop._id })
+                }
+                await user.save();
+                for (const workshop of workshops) {
+                    await workshop.save();
+                }
+            } catch (err) {
+                console.log(err.message);
+                res.status(400).send(`Error ${err.message}`);
+                reject({ data: undefined })
+            }
+            res.send("OK");
+            resolve({ data: "Paid" })
+        }
+        //Cast Rial to Toman
+        price = price / 10;
+        zarinpal.PaymentRequest({
+            Amount: price,
+            CallbackURL: `${process.env.FRONTURL}`+'/payment/result?order_id='+orderId+'&amount='+price,
+            Description: 'Buy Workshop'
+        }).then(function (response) {
+            if (response.status == 100) {
+                resolve(response.url);
+            }
+            else{
+                reject({data:'failed'})
+            }
+        }).catch(function (err) {
+            res.status(500).send(err.message);
+            reject({ data: undefined });
+        })
+    
+    })
 }
+
 
 router.post('/initpayment', auth, async (req, res) => {
     let workshops = [];
-    console.log("Init");
     try {
         for (const workshopId of req.body.workshopIds) {
             const workshop = await Workshop.findById(workshopId);
@@ -318,7 +372,6 @@ router.post('/initpayment', auth, async (req, res) => {
                 if (!workshop.isRegOpen) {
                     flag = false;
                 }
-
                 //Check already in or not
                 for (const wsId of req.user.workshops) {
                     if (wsId.workshop == workshopId) {
@@ -331,136 +384,18 @@ router.post('/initpayment', auth, async (req, res) => {
             } catch (err) {
                 res.status(500).send({ msg: err.message, err });
             }
-
         }
     } catch (err) {
         res.status(400).send(err.message);
     }
     if (workshops.length !== 0) {
-        try {
-            const sadadRes = (await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)).data;
-            if (!sadadRes) {
-                return;
-            }
-            console.log("BUG");
-            console.log("DONE:   " + JSON.stringify(sadadRes) + "\n\n");
-            if (sadadRes.ResCode === "0") {
-                res.send(sadadRes.Token);
-            } else {
-                res.status(400).send(sadadRes.Description);
-            }
-        } catch (err) {
-            res.status(500).send(err.message);
-        }
+        const urlToRedirect = await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)
+        console.log(urlToRedirect)
+        res.status(200).send(urlToRedirect)
     } else {
         res.status(400).send("No available workshop to register");
     }
-});
+})
 
-async function verifySadad(data) {
-    const sadadRes = (await axios.post(verifyPaymentUrl, data)).data;
-    return sadadRes;
-}
-
-router.post('/verifypayment', async (req, res) => {
-    const url = "payment/result"
-
-    try {
-
-        if (req.body.ResCode !== "0") {
-            redirectTo(res, process.env.SITE + url, { status: "BAD", stage: `inital res code non 0  wtf is this:${req.body.ResCode}` });
-            return;
-        }
-        const user = await User.findOne({
-            "orderIDs.idNumber": req.body.OrderId
-        });
-        if (!user) {
-            redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "user not found wtf??" });
-            return;
-        }
-
-        let order;
-        for (const oi of user.orderIDs) {
-            if (oi.idNumber == req.body.OrderId) {
-                order = oi;
-                break;
-            }
-        }
-
-        const SignData = CryptoJS.TripleDES.encrypt(req.body.token, CryptoJS.enc.Base64.parse(process.env.TERMINAL_KEY), {
-            mode: CryptoJS.mode.ECB,
-            padding: CryptoJS.pad.Pkcs7
-        }).toString();
-
-        const data = {
-            Token: req.body.token,
-            SignData: SignData
-        };
-
-        console.log("verify payload: " + JSON.stringify(data));
-
-
-        const now = (new Date()).getTime();
-        const interval = setInterval(async () => {
-            try {
-                const sadadRes = await verifySadad(data);
-
-                if (sadadRes) {
-                    clearInterval(interval);
-
-                    if (sadadRes.ResCode !== "0") {
-                        redirectTo(res, process.env.SITE + url, { status: "BAD", stage: `verify res code non 0 its ${sadadRes.ResCode}` });
-                        return;
-                    }
-
-                    user.orders = user.orders.concat({
-                        ...sadadRes,
-                        workshopIds: order.workshopId
-                    });
-
-                    for (const workshop of order.workshopId) {
-                        user.workshops = user.workshops.concat({ workshop });
-                    }
-
-                    user.orderIDs.splice(user.orderIDs.indexOf(order), 1);
-                    try {
-                        await user.save();
-                        for (const workshop of order.workshopId) {
-                            const workshopObj = await Workshop.findById(workshop);
-                            fs.writeFileSync("./ignore/register.log", `${user.email} : ${workshopObj.title}\n`);
-                            await workshopObj.save();
-                        }
-                    } catch (err) {
-                        console.error(JSON.stringify(err));
-                        clearInterval(interval);
-                        redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "User save problem" });
-                        return;
-                    }
-
-                    redirectTo(res, process.env.SITE + url, {
-                        status: "GOOD",
-                        Amount: sadadRes.Amount,
-                        RetrivalRefNo: sadadRes.RetrivalRefNo,
-                        SystemTraceNo: sadadRes.SystemTraceNo
-                    });
-                    return;
-                } else if ((new Date()).getTime() - now > 10000) {
-                    clearInterval(interval);
-                    redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "Time out" });
-                    return;
-                }
-            } catch (err) {
-                console.error(err.message);
-                clearInterval(interval);
-                redirectTo(res, process.env.SITE + url, { status: "BAD", stage: "Sadad req error" });
-                return;
-            }
-        }, 2000);
-    } catch (err) {
-        console.error(err.message);
-        console.error(err);
-        res.status(500).send(err.message);
-    }
-});
 
 module.exports = router;

@@ -1,15 +1,15 @@
 const fs = require('fs');
-
 const nodemailer = require("nodemailer");
-const CryptoJS = require('crypto-js');
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: `${process.env.MAILHOST}`,
+    port: 587,
     auth: {
-        user: 'ceit.linuxfest@gmail.com',
-        pass: process.env.MAIL_PASSWORD
+        user: `${process.env.MAILUSER}`,
+        pass: `${process.env.MAILPASS}`
     }
 });
+
 
 function checkPermission(admin, perm, res) {
     console.log(admin.permissions.filter(permission => permission.permission === perm));
@@ -24,12 +24,13 @@ function checkPermission(admin, perm, res) {
 async function sendWelcomeEmail(user) {
     let html;
     try {
-        html = fs.readFileSync("./mails/register.html").toString();
+        html = fs.readFileSync("../mails/register.html").toString();
     } catch (err) {
+        console.log(err)
         html = "Welcome to linuxfest";
     }
     const mailOptions = {
-        from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
+        from: '"CEIT Linux Festival" <linuxfest@ceit-ssc.ir>',
         to: user.email,
         subject: 'Welcome to Linux Festival!',
         html: html
@@ -43,19 +44,41 @@ async function sendWelcomeEmail(user) {
     });
 }
 
+
+async function sendEmail(email,subject,html)
+{
+    return new Promise(async(resolve,reject)=>{
+        const mailOptions = {
+            from: '"CEIT Linux Festival" <linuxfest@ceit-ssc.ir>',
+            to: email,
+            subject: subject,
+            html: html
+        };
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                reject(error)
+                // return console.log(error)
+            }
+            resolve(email)
+            // return email
+        });
+    })
+
+}
+
 async function sendForgetPasswordEmail(user, token) {
 
     let html;
-    const link = `${process.env.SITE}user/forget/${token}`
+    const link = `${process.env.FRONTURL}/user/forget/${token}`
     try {
-        html = fs.readFileSync("./mails/password.html").toString();
+        html = fs.readFileSync("../mails/password.html").toString();
         html = html.replace("<<<LINK_TO_RESET>>>", link);
     } catch (err) {
         html = link;
     }
 
     const mailOptions = {
-        from: '"CEIT Linux Festival" <ceit.linuxfest@gmail.com>',
+        from: '"CEIT Linux Festival" <linuxfest@ceit-ssc.ir>',
         to: user.email,
         subject: 'Password reset',
         html: html
@@ -69,14 +92,9 @@ async function sendForgetPasswordEmail(user, token) {
     });
 }
 
-function redirectTo(res, url, data) {
-    const dt = CryptoJS.AES.encrypt(JSON.stringify(data), "simple-secret").toString();
-    res.redirect(url + "?data=" + dt);
-}
-
 module.exports = {
     checkPermission,
     sendWelcomeEmail,
     sendForgetPasswordEmail,
-    redirectTo
+    sendEmail
 }

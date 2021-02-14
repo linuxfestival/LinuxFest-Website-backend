@@ -26,7 +26,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
         res.send(teacher);
 
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        res.status(400).send({ error: err.message });
     }
 });
 
@@ -48,7 +48,7 @@ router.get('/', authenticateAdmin, async (req, res) => {
 
         res.send(result);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        res.status(400).send({ error: err.message });
     }
 });
 
@@ -67,7 +67,7 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
 
         res.send({ teacher, workshops: teacher.workshops });
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        res.status(400).send({ error: err.message });
     }
 })
 
@@ -94,7 +94,7 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
         await teacher.save();
         res.send(teacher);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        res.status(400).send({ error: err.message });
     }
 });
 
@@ -103,26 +103,19 @@ router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
         if (!checkPermission(req.admin, 'deleteTeacher', res)) {
             return;
         }
-
         const teacher = await Teacher.findById(req.params.id);
-
         if (!teacher) {
             res.status(404).send();
             return;
         }
-
         await Teacher.deleteOne(teacher);
-
-        teacher.save();
-
-        res.send(teacher);
+        res.status(204).end()
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        res.status(400).send({ error: err.message });
     }
 })
 
 
-//Upload file endpoint(s)
 const upload = multer({
     limits: {
         fileSize: 10000000
@@ -134,6 +127,25 @@ const upload = multer({
         cb(undefined, true);
     }
 });
+
+
+//TODO : Add picture get route
+
+router.get('/pic/:id',async(req,res)=>{
+    try{
+        if (fs.existsSync(".."+"/uploads/"+process.env.SITE_VERSION+"/teachers/"+req.params.id+"/mainPic.png"))
+        {
+            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+process.env.SITE_VERSION+"/teachers/"+req.params.id+"/mainPic.png"));
+        }
+        else
+        {
+            res.status(404).send({message:"File Not Found"})
+        }
+    }catch(error){
+        res.status(400).send({message:"Internal error"})
+    }
+})
+
 
 router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
     if (!checkPermission(req.admin, 'editTeacher', res)) {
@@ -147,7 +159,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
         }
 
         const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
-        const filePath = path.resolve(path.join("../uploads", process.env.SITE_VERSION, "teachers", req.params.id));
+        const filePath = path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "teachers", req.params.id));
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -161,11 +173,12 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
             }
         });
 
-        teacher.imagePath = path.join(filePath, "mainPic.png");
+        teacher.imagePath = path.join(filePath, "mainPic.png")
         await teacher.save();
 
-        res.send(teacher);
+        res.status(200).send(teacher);
     } catch (error) {
+        console.log(error)
         res.status(500).send({ error: error.message });
     }
 }, (err, req, res) => {
@@ -185,7 +198,7 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        fs.unlink(path.resolve(path.join("../uploads", process.env.SITE_VERSION, "teachers", req.params.id, "mainPic.png")), (err) => {
+        fs.unlink(path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "teachers", req.params.id, "mainPic.png")), (err) => {
             if (err) {
                 console.log(err);
             }
