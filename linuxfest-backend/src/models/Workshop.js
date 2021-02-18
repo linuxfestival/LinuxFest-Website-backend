@@ -89,6 +89,7 @@ schema.pre("save", async function (next) {
 schema.methods.toJSON = function () {
     const workshop = this;
     const workshopObject = workshop.toObject();
+    //TODO: FIX HERE TO GET WORKSHOP PICTURE
     const url = `/uploads/${process.env.SITE_VERSION}/workshops/${workshopObject._id}`;
     if (workshopObject.picPath) {
         workshopObject.picUrl = url + '/mainPic.png';

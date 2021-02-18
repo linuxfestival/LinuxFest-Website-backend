@@ -57,10 +57,10 @@ async function sendEmail(email,subject,html)
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 reject(error)
-
+                // return console.log(error)
             }
             resolve(email)
-
+            // return email
         });
     })
 

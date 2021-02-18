@@ -183,7 +183,7 @@ schema.methods.toJSON = function () {
   delete userObject.password;
   delete userObject.tokens;
   delete userObject.forgotTokens;
-  delete userObject.orderIDs;
+  // delete userObject.orderIDs;
 
   return userObject;
 };

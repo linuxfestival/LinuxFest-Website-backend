@@ -158,7 +158,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
             return;
         }
 
-        const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
+        const buffer = await sharp(req.file.buffer).png().toBuffer();
         const filePath = path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "teachers", req.params.id));
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {

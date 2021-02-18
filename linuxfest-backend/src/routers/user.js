@@ -324,12 +324,14 @@ async function initPayment(user, workshops,workshopsIds, discountCode, res) {
                 }
             } catch (err) {
                 console.log(err.message);
-                res.status(400).send(`Error ${err.message}`);
-                reject({ data: undefined })
+                // res.status(400).send(`Error ${err.message}`);
+                reject("Error")
             }
-            res.send("OK");
-            resolve({ data: "Paid" })
+            //Delete Here
+            // res.send("OK");
+            resolve("Paid")
         }
+        else{
         //Cast Rial to Toman
         price = price / 10;
         zarinpal.PaymentRequest({
@@ -341,12 +343,13 @@ async function initPayment(user, workshops,workshopsIds, discountCode, res) {
                 resolve(response.url);
             }
             else{
-                reject({data:'failed'})
+                reject("Error")
             }
         }).catch(function (err) {
-            res.status(500).send(err.message);
-            reject({ data: undefined });
+            // res.status(500).send(err.message);
+            reject("Error");
         })
+        }
     
     })
 }
@@ -390,7 +393,7 @@ router.post('/initpayment', auth, async (req, res) => {
     }
     if (workshops.length !== 0) {
         const urlToRedirect = await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)
-        console.log(urlToRedirect)
+        console.log("\n\n URL == " + JSON.stringify(urlToRedirect) + "\t\t FOR USER == " + req.user._id + "  \t\t WORKSHOPS == "+req.body.workshopIds+"\n\n")
         res.status(200).send(urlToRedirect)
     } else {
         res.status(400).send("No available workshop to register");
