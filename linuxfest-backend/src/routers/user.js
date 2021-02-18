@@ -8,6 +8,7 @@ const auth = require('../express_middlewares/userAuth');
 const Workshop = require('../models/Workshop');
 const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
+const { response } = require('express');
 const router = new express.Router();
 
 
@@ -69,6 +70,27 @@ router.get('/verifyPayment',async(req,res)=>{
     }catch(err){
         res.status(500).send({message:err})
     }
+})
+
+
+//==================== Unverified Transactions
+router.get('/payment/unverifiedtrans',authenticateAdmin,async(req,res)=>{
+    if (!checkPermission(req.admin, "editUser", res)) {
+        res.status(401).send();
+        return;
+    }
+    console.log("Verifing old payments")
+    zarinpal.UnverifiedTransactions().then(response=>{
+        if(response.status == 100){
+            console.log(response.status)
+            res.status(200).send(response.authorities)
+        }else{
+            console.log(JSON.stringify(response))
+        }
+    }).catch(err=>{
+        console.log(err)
+        res.status(400).send(err)
+    })
 })
 
 async function createUser(req, res) {
