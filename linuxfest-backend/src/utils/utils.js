@@ -24,7 +24,7 @@ function checkPermission(admin, perm, res) {
 async function sendWelcomeEmail(user) {
     let html;
     try {
-        html = fs.readFileSync("../mails/register.html").toString();
+        html = fs.readFileSync(`${__dirname}/../../mails/register.html`).toString();
     } catch (err) {
         console.log(err)
         html = "Welcome to linuxfest";
@@ -35,7 +35,6 @@ async function sendWelcomeEmail(user) {
         subject: 'Welcome to Linux Festival!',
         html: html
     };
-
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             return console.log(error);
