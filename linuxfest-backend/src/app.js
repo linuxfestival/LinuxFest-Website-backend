@@ -17,12 +17,12 @@ app.get("/ping", (req, res) => {
 
 
 //================================== Routes ==================================\\
-app.use(`/${BASEURL}` + '/almightyone', require('./routers/superuser'));
-app.use(`/${BASEURL}` + '/users', require('./routers/user'));
-app.use(`/${BASEURL}` + '/workshops', require('./routers/workshop'));
-app.use(`/${BASEURL}` + '/teachers', require('./routers/teacher'));
-app.use(`/${BASEURL}` + '/discounts', require('./routers/discount'));
-app.use(`/${BASEURL}` + '/statics', require('./routers/static'));
-app.use(`/${BASEURL}` + '/companies', require('./routers/company'))
+app.use(`/${BASEURL}/almightyone`, require('./routers/superuser'));
+app.use(`/${BASEURL}/users`, require('./routers/user'));
+app.use(`/${BASEURL}/workshops`, require('./routers/workshop'));
+app.use(`/${BASEURL}/teachers`, require('./routers/teacher'));
+app.use(`/${BASEURL}/discounts`, require('./routers/discount'));
+app.use(`/${BASEURL}/statics`, require('./routers/static'));
+app.use(`/${BASEURL}/companies`, require('./routers/company'))
 
 module.exports = app;
