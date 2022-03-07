@@ -9,12 +9,9 @@ const connectDB = async () => {
             useUnifiedTopology: true
         })
 
-        await mongoose.connection.db.dropDatabase();
-        console.log("Database dropped")
         return Promise.resolve();
     }
     catch (ex) {
-        console.log("Connection Error (Database)")
         return Promise.reject(ex);
     }
 }

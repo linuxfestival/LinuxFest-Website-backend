@@ -8,3 +8,4 @@ mongodb-data
 uploads
 *.orig
 *.log
+logs

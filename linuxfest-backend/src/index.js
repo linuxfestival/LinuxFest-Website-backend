@@ -19,7 +19,7 @@ const runAPI = () => {
     }).catch((err)=>{
         logger.error(`${err} mongoDB didn't connect!`);
         if (attempt < MAX_ATTEMPT) {
-            setTimeout(runApi, 10000);
+            setTimeout(runAPI, 10000);
         } else {
             logger.error("Exiting the process!");
             process.exit(1);
