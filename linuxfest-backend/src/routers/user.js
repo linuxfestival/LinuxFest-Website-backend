@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { ZARIN, SIGN_TOKEN, FRONTURL} = require('./../config/index.js')
+const { ZARIN, SIGN_TOKEN, FRONTURL, RANDOM} = require('./../config/index.js')
 const ZarinpalCheckout = require('zarinpal-checkout');
 const zarinpal = ZarinpalCheckout.create(ZARIN, false);
 const User = require('../models/User');
@@ -10,6 +10,7 @@ const Workshop = require('../models/Workshop');
 const { checkPermission, sendWelcomeEmail, sendForgetPasswordEmail } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 const { response } = require('express');
+const logger = require('./../config/logger.js')
 const router = new express.Router();
 
 
@@ -20,7 +21,7 @@ router.get('/verifyPayment',async(req,res)=>{
             Authority: req.query.Authority
 	    }).then( async(response)=>{
 		if (response.status == 101 || response.status == 100) {
-            console.log("Verified! Ref ID: " + response.RefID);
+            logger.info("Verified! Ref ID: " + response.RefID);
             const user = await User.findOne({
                 "orderIDs.idNumber": req.query.order_id
             });
@@ -88,6 +89,7 @@ router.get('/payment/unverifiedtrans',authenticateAdmin,async(req,res)=>{
         }else{
             console.log(JSON.stringify(response))
         }
+        // TODO: check this line
     }).catch(err=>{
         console.log(err)
         res.status(400).send(err)
@@ -95,7 +97,6 @@ router.get('/payment/unverifiedtrans',authenticateAdmin,async(req,res)=>{
 })
 
 async function createUser(req, res) {
-    console.log('yes')
     const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber"];
     const finalBody = {};
     validFields.forEach(field => {
@@ -300,11 +301,10 @@ router.delete('/:id', authenticateAdmin, async (req, res) => {
     await userDelete(user, req, res);
     res.status(204).end()
 });
-
 //======================= Payment =======================\\
 async function initPayment(user, workshops,workshopsIds, discountCode, res) {
     return new Promise(async(resolve,reject)=>{
-        const rand = Math.floor(Math.random() * parseInt(`${process.env.RANDOM}`));
+        const rand = Math.floor(Math.random() * RANDOM);
         const orderId = parseInt(user._id, 16) % rand;
         user.orderIDs = user.orderIDs.concat({ workshopId:workshopsIds, idNumber: orderId });
         await user.save();
@@ -337,6 +337,7 @@ async function initPayment(user, workshops,workshopsIds, discountCode, res) {
             }
         } catch (err) {
             console.log(err);
+            reject("Error")
         }
         if (price === 0) {
             try {
@@ -386,12 +387,12 @@ router.post('/initpayment', auth, async (req, res) => {
         for (const workshopId of req.body.workshopIds) {
             const workshop = await Workshop.findById(workshopId);
             if (!workshop) {
-                res.status(404).send(`${workshopId} not found`);
-                return;
+                return res.status(404).send(`${workshopId} not found`);
             }
             try {
-                //Check capacity
+                // flag shows workshop should be added to workshops list or not
                 let flag = true;
+                //Check capacity
                 await workshop.populate('participants').execPopulate();
                 if (workshop.participants.length >= workshop.capacity) {
                     workshop.isRegOpen = false;
@@ -402,6 +403,7 @@ router.post('/initpayment', auth, async (req, res) => {
                 }
                 //Check already in or not
                 for (const wsId of req.user.workshops) {
+                    // TODO check below condition
                     if (wsId.workshop == workshopId) {
                         flag = false;
                     }
@@ -410,18 +412,23 @@ router.post('/initpayment', auth, async (req, res) => {
                     workshops = workshops.concat(workshop);
                 }
             } catch (err) {
-                res.status(500).send({ msg: err.message, err });
+                return res.status(500).send({ msg: err.message, err });
             }
         }
     } catch (err) {
-        res.status(400).send(err.message);
+        return res.status(400).send(err.message);
     }
     if (workshops.length !== 0) {
-        const urlToRedirect = await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)
-        console.log("\n\n URL == " + JSON.stringify(urlToRedirect) + "\t\t FOR USER == " + req.user._id + "  \t\t WORKSHOPS == "+req.body.workshopIds+"\n\n")
-        res.status(200).send(urlToRedirect)
+        try{
+            const urlToRedirect = await initPayment(req.user, workshops, req.body.workshopIds, req.body.discount, res)
+            console.log("\n\n URL == " + JSON.stringify(urlToRedirect) + "\t\t FOR USER == " + req.user._id + "  \t\t WORKSHOPS == "+req.body.workshopIds+"\n\n")
+            return res.status(200).send(urlToRedirect)
+        }catch(err){
+            // TODO: check this line
+            return res.status(400).send("Theres a problem to register to workshops");
+        }
     } else {
-        res.status(400).send("No available workshop to register");
+        return res.status(400).send("No available workshop to register");
     }
 })
 
