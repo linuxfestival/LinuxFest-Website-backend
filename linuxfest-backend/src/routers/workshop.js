@@ -31,15 +31,15 @@ router.post('/', authenticateAdmin, async (req, res) => {
             const id = obj.id;
             const teacher = await Teacher.findById(id);
             if (!teacher) {
-                res.status(404).send("Teacher not found");
+                return res.status(404).send("Teacher not found");
             }
             obj.name = teacher.fullName;
         }
         await workshop.save();
 
-        res.status(201).send(workshop)
+        return res.status(201).send(workshop)
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 
@@ -61,18 +61,18 @@ router.get("/manage", authenticateAdmin, async (req, res) => {
             });
         }
 
-        res.send(result);
+        return res.send(result);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 
 router.get('/', async (req, res) => {
     try {
         const workshops = await Workshop.find({});
-        res.send(workshops);
+        return res.send(workshops);
     } catch (err) {
-        res.status(500).send({ err: err.message });
+        return res.status(500).send({ err: err.message });
     }
 });
 
@@ -84,8 +84,7 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
 
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         await workshop.populate('participants').execPopulate();
@@ -95,23 +94,22 @@ router.get('/manage/:id', authenticateAdmin, async (req, res) => {
         }
 
         const count = await workshop.participantsCount;
-        res.send({ workshop, participants: workshop.participants, teachers, participantsCount: count });
+        return res.send({ workshop, participants: workshop.participants, teachers, participantsCount: count });
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 
 router.get("/:id", async (req, res) => {
     const workshop = await Workshop.findById(req.params.id);
     if (!workshop) {
-        res.status(404).send();
-        return;
+        return res.status(404).send();
     }
     let teachers = [];
     for (const teacher of workshop.teachers) {
         teachers = teachers.concat(await Teacher.findById(teacher.id));
     }
-    res.send({ workshop, teachers });
+    return res.send({ workshop, teachers });
 })
 
 router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
@@ -122,22 +120,20 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
 
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'times'];
         const updates = Object.keys(req.body);
         if (!updates.every(element => validUpdates.includes(element))) {
-            res.status(400).send();
-            return;
+            return res.status(400).send();
         }
 
         updates.forEach(update => workshop[update] = req.body[update]);
         await workshop.save()
-        res.send(workshop);
+        return res.send(workshop);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 
@@ -147,8 +143,7 @@ router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
     }
     const workshop = await Workshop.findById(req.params.id);
     if (!workshop) {
-        res.status(404).send();
-        return;
+        return res.status(404).send();
     }
     await workshop.populate('participants').execPopulate();
     for (const participant of workshop.participants) {
@@ -156,7 +151,7 @@ router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
         await participant.save();
     }
     await Workshop.deleteOne(workshop);
-    res.status(204).end()
+    return res.status(204).end()
 });
 
 router.put('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, res) => {
@@ -166,22 +161,20 @@ router.put('/manage/:workshopId/user/:userId', authenticateAdmin, async (req, re
     try {
         const workshop = await Workshop.findById(req.params.workshopId);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         const user = await User.findById(req.params.userId);
         if (!user) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         if (workshop.isRegOpen) {
             user.workshops = user.workshops.concat({ workshop: workshop._id });
             await user.save();
             await workshop.save();
         }
-        res.status(200).send();
+        return res.status(200).send();
     } catch (err) {
-        res.status(500).send(err);
+        return res.status(500).send(err);
     }
 });
 
@@ -192,13 +185,11 @@ router.delete('/manage/:workshopId/user/:userId', authenticateAdmin, async (req,
     try {
         const workshop = await Workshop.findById(req.params.workshopId);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         const user = await User.findById(req.params.userId);
         if (!user) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         user.workshops = user.workshops.filter(val => {
@@ -206,9 +197,9 @@ router.delete('/manage/:workshopId/user/:userId', authenticateAdmin, async (req,
         });
 
         await user.save();
-        res.status(200).send();
+        return res.status(200).send();
     } catch (err) {
-        res.status(500).send(err.message);
+        return res.status(500).send(err.message);
     }
 });
 
@@ -230,14 +221,14 @@ router.get('/pic/:id',async(req,res)=>{
     try{
         if (fs.existsSync(".."+"/uploads/"+SITE_VERSION+"/workshops/"+req.params.id+"/mainPic.png"))
         {
-            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/workshops/"+req.params.id+"/mainPic.png"));
+            return res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/workshops/"+req.params.id+"/mainPic.png"));
         }
         else
         {
-            res.status(404).send({message:"File Not Found"})
+            return res.status(404).send({message:"File Not Found"})
         }
     }catch(error){
-        res.status(400).send({message:"Internal error"})
+        return res.status(400).send({message:"Internal error"})
     }
 })
 
@@ -245,14 +236,14 @@ router.get('/pic/:workshop/:id',async(req,res)=>{
     try{
         if (fs.existsSync(".."+"/uploads/"+SITE_VERSION+"/workshops/"+req.params.workshop+"/"+ req.params.id +".png"))
         {
-            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/workshops/"+req.params.workshop+"/" + req.params.id +".png"));
+            return res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/workshops/"+req.params.workshop+"/" + req.params.id +".png"));
         }
         else
         {
-            res.status(404).send({message:"File Not Found"})
+            return res.status(404).send({message:"File Not Found"})
         }
     }catch(error){
-        res.status(400).send({message:"Internal error"})
+        return res.status(400).send({message:"Internal error"})
     }
 })
 
@@ -264,8 +255,7 @@ router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async
     try {
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         for (const file of req.files) {
@@ -295,12 +285,12 @@ router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async
 
         await workshop.save();
 
-        res.send(workshop);
+        return res.send(workshop);
     } catch (error) {
-        res.status(500).send({ error: error.message });
+        return res.status(500).send({ error: error.message });
     }
 }, (err, req, res) => {
-    res.status(400).send({ error: err.message });
+    return res.status(400).send({ error: err.message });
 });
 
 router.delete('/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
@@ -311,8 +301,7 @@ router.delete('/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
     try {
         const workshop = await Workshop.findOne({ _id: req.params.id, 'album._id': req.params.picid });
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         fs.unlinkSync(path.resolve(path.join("../uploads", `${SITE_VERSION}`, "workshops", req.params.id, "album", req.params.picid + '.png')), (err) => {
@@ -326,9 +315,9 @@ router.delete('/pic/album/:id/:picid', authenticateAdmin, async (req, res) => {
         });
         await workshop.save();
 
-        res.send(workshop);
+        return res.send(workshop);
     } catch (error) {
-        res.status(500).send({ error: error.message });
+        return res.status(500).send({ error: error.message });
     }
 });
 
@@ -339,8 +328,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
     try {
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
@@ -361,12 +349,12 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
         workshop.picPath = path.join(filePath, "mainPic.png");
         await workshop.save();
 
-        res.send(workshop);
+        return res.send(workshop);
     } catch (error) {
-        res.status(500).send({ error: error.message });
+        return res.status(500).send({ error: error.message });
     }
 }, (err, req, res) => {
-    res.status(400).send({ error: err.message });
+    return res.status(400).send({ error: err.message });
 });
 
 router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
@@ -377,8 +365,7 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
     try {
         const workshop = await Workshop.findById(req.params.id);
         if (!workshop || !workshop.picPath) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         fs.unlink(path.resolve(path.join("../uploads", SITE_VERSION, "workshops", req.params.id, "mainPic.png")), (err) => {
@@ -390,10 +377,10 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
         workshop.picPath = '';
         await workshop.save();
 
-        res.send(workshop);
+        return res.send(workshop);
 
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 

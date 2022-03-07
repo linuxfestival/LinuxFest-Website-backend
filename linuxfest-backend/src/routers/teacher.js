@@ -130,13 +130,13 @@ const upload = multer({
 });
 
 
-//TODO : Add picture get route
-
 router.get('/pic/:id',async(req,res)=>{
     try{
-        if (fs.existsSync(".."+"/uploads/"+SITE_VERSION+"/teachers/"+req.params.id+"/mainPic.png"))
+        const filePath = path.resolve(path.join("../uploads", `${SITE_VERSION}`, "teachers", req.params.id, "mainPic.png"));
+
+        if (fs.existsSync(filePath))
         {
-            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/teachers/"+req.params.id+"/mainPic.png"));
+            res.status(200).sendFile(filePath);
         }
         else
         {
