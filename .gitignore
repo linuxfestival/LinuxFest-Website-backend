@@ -2,7 +2,8 @@ node_modules
 .vscode
 mongodb
 mongodb-data
-config
+.env*
+!.env*test
 .eslintrc.json
 uploads
 *.orig
