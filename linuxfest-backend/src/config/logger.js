@@ -5,7 +5,7 @@ const logConfiguration = {
     transports:
         [
             new transports.File({
-                level: 'error',
+                level: 'info',
                 filename: `${__dirname}/../logs/server.log`,
                 format: format.combine(
                     format.timestamp({ format: 'MMM-DD-YYYY HH:mm:ss' }),

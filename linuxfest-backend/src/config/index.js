@@ -14,4 +14,5 @@ module.exports = {
     MAILUSER: process.env.MAILUSER,
     MAILPASS: process.env.MAILPASS,
     ZARIN: process.env.ZARIN,
+    RANDOM: parseInt(process.env.RANDOM)
 }
