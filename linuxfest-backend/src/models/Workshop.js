@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Teacher = require('./Teacher');
+const { SITE_VERSION } = require('./../config/index.js')
 
 const schema = mongoose.Schema({
     capacity: {
@@ -90,7 +91,7 @@ schema.methods.toJSON = function () {
     const workshop = this;
     const workshopObject = workshop.toObject();
     //TODO: FIX HERE TO GET WORKSHOP PICTURE
-    const url = `/uploads/${process.env.SITE_VERSION}/workshops/${workshopObject._id}`;
+    const url = `/uploads/${SITE_VERSION}/workshops/${workshopObject._id}`;
     if (workshopObject.picPath) {
         workshopObject.picUrl = url + '/mainPic.png';
     }

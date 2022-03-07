@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { SIGN_TOKEN } = require('./../config/index.js')
 
 const superUserSchema = new mongoose.Schema({
     username: {
@@ -49,7 +50,7 @@ superUserSchema.statics.findByCredentials = async (username, password) => {
 
 superUserSchema.methods.generateAuthToken = async function () {
     const admin = this;
-    const token = jwt.sign({ _id: admin._id.toString() }, `${process.env.SIGN_TOKEN}`, { expiresIn: '7 days' });
+    const token = jwt.sign({ _id: admin._id.toString() }, SIGN_TOKEN, { expiresIn: '7 days' });
 
     admin.tokens = admin.tokens.concat({ token });
     await admin.save();

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const persianize = require('persianize');
+const { BASEURL } = require('./../config/index.js')
 
 const schema = mongoose.Schema({
     fullName: {
@@ -35,7 +36,7 @@ schema.methods.toJSON = function () {
     const teacher = this;
     const teacherObject = teacher.toObject();
 
-    const url = `/${process.env.BASEURL}/teachers/pic/${teacherObject._id}`;
+    const url = `/${BASEURL}/teachers/pic/${teacherObject._id}`;
     if (teacherObject.imagePath) {
         delete teacherObject.imagePath;
         teacherObject.picUrl = url;

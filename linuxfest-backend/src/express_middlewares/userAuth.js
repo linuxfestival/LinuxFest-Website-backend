@@ -1,10 +1,10 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-
+const {SIGN_TOKEN} = require('./../config/index.js')
 async function authCheckUser(req) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
-        const decoded = jwt.verify(token, `${process.env.SIGN_TOKEN}`);
+        const decoded = jwt.verify(token, SIGN_TOKEN);
         const user = await User.findOne({ _id: decoded._id, 'tokens.token': token });
 
         if (!user) {

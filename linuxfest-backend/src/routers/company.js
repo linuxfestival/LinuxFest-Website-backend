@@ -6,6 +6,7 @@ const fs = require('fs');
 const Company = require('../models/Company');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
+const { SITE_VERSION } = require('./../config/index.js');
 
 const router = new express.Router();
 
@@ -205,9 +206,9 @@ const upload = multer({
 
 router.get('/pic/:id',async(req,res)=>{
     try{
-        if (fs.existsSync(".."+"/uploads/"+process.env.SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"))
+        if (fs.existsSync(".."+"/uploads/"+SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"))
         {
-            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+process.env.SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"));
+            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"));
         }
         else
         {
@@ -230,7 +231,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('companyLogo'), async (
         }
 
         const buffer = await sharp(req.file.buffer).png().toBuffer();
-        const filePath = path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "companies", req.params.id));
+        const filePath = path.resolve(path.join("../uploads", `${SITE_VERSION}`, "companies", req.params.id));
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -270,7 +271,7 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        fs.unlink(path.resolve(path.join("../uploads", `${process.env.SITE_VERSION}`, "companies", req.params.id, "companyLogo.png")), (err) => {
+        fs.unlink(path.resolve(path.join("../uploads", SITE_VERSION, "companies", req.params.id, "companyLogo.png")), (err) => {
             if (err) {
                 console.log(err);
             }

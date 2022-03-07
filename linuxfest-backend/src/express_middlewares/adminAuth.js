@@ -1,6 +1,6 @@
 const SuperUser = require('../models/SuperUser');
 const jwt = require('jsonwebtoken');
-
+const {SUPER_TOKEN_SIGN, SIGN_TOKEN} = require('./../config/index.js')
 async function authenticateCreateAdmin(req, res, next) {
     try {
         console.log("Number of admins: ", (await SuperUser.find()).length);
@@ -31,10 +31,11 @@ async function authenticateCreateAdmin(req, res, next) {
 
         if ((await SuperUser.find()).length === 0) {
             const token = req.header('Authorization').replace('Bearer ', '');
-            if (token === `${process.env.SUPER_TOKEN_SIGN}`) {
+            if (token === SUPER_TOKEN_SIGN) {
                 const admin = new SuperUser({
                     permissions: superManPermissions
                 });
+                console.log(admin)
                 req.newAdmin = admin;
                 next();
             } else {
@@ -58,7 +59,7 @@ async function authenticateCreateAdmin(req, res, next) {
 async function authCheckAdmin(req) {
     try {
         const token = req.header('Authorization').replace('Bearer ', '');
-        const decoded = jwt.verify(token, `${process.env.SIGN_TOKEN}`);
+        const decoded = jwt.verify(token, SIGN_TOKEN);
         const admin = await SuperUser.findOne({ _id: decoded._id, 'tokens.token': token });
 
         if (!admin) {

@@ -3,6 +3,7 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const persianize = require("persianize");
+const { SIGN_TOKEN } = require('./../config/index.js')
 
 const schema = new mongoose.Schema({
   firstName: {
@@ -154,7 +155,7 @@ schema.statics.findByCredentials = async function (email, password) {
 
 schema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({ _id: user._id.toString() }, `${process.env.SIGN_TOKEN}`, {
+  const token = jwt.sign({ _id: user._id.toString() }, SIGN_TOKEN, {
     expiresIn: "7 days"
   });
 
@@ -166,7 +167,7 @@ schema.methods.generateAuthToken = async function () {
 
 schema.methods.generateForgotToken = async function (email) {
   const user = this;
-  const forgotToken = jwt.sign({ email }, `${process.env.SIGN_TOKEN}`, {
+  const forgotToken = jwt.sign({ email }, SIGN_TOKEN, {
     expiresIn: "2 days"
   });
   user.forgotTokens = user.forgotTokens.concat({ forgotToken });

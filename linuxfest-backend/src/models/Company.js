@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const {SITE_VERSION} = require('./../config/index.js')
 
 const schema = new mongoose.Schema({
     name: {
@@ -36,7 +37,7 @@ schema.methods.toJSON = function () {
     const company = this;
     const companyObject = company.toObject();
 
-    const url = `/uploads/${process.env.SITE_VERSION}/companies/${companyObject._id}/companyLogo.png`;
+    const url = `/uploads/${SITE_VERSION}/companies/${companyObject._id}/companyLogo.png`;
     if (companyObject.logo) {
         delete companyObject.logo;
         companyObject.picUrl = url;

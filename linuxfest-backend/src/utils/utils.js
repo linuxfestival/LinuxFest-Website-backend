@@ -1,12 +1,13 @@
 const fs = require('fs');
 const nodemailer = require("nodemailer");
+const { MAILHOST, MAILUSER, MAILPASS, FRONTURL } = require('./../config/index.js')
 
 const transporter = nodemailer.createTransport({
-    host: `${process.env.MAILHOST}`,
+    host: MAILHOST,
     port: 587,
     auth: {
-        user: `${process.env.MAILUSER}`,
-        pass: `${process.env.MAILPASS}`
+        user: MAILUSER,
+        pass: MAILPASS,
     }
 });
 
@@ -68,9 +69,9 @@ async function sendEmail(email,subject,html)
 async function sendForgetPasswordEmail(user, token) {
 
     let html;
-    const link = `${process.env.FRONTURL}/user/forget/${token}`
+    const link = `${FRONTURL}/user/forget/${token}`
     try {
-        html = fs.readFileSync("../mails/password.html").toString();
+        html = fs.readFileSync(`${__dirname}/../../mails/password.html`).toString();
         html = html.replace("<<<LINK_TO_RESET>>>", link);
     } catch (err) {
         html = link;

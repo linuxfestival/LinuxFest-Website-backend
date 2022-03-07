@@ -1,7 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { ZARIN, SIGN_TOKEN, FRONTURL} = require('./../config/index.js')
 const ZarinpalCheckout = require('zarinpal-checkout');
-const zarinpal = ZarinpalCheckout.create(`${process.env.ZARIN}`, false);
+const zarinpal = ZarinpalCheckout.create(ZARIN, false);
 const User = require('../models/User');
 const Discount = require('../models/Discount');
 const auth = require('../express_middlewares/userAuth');
@@ -94,6 +95,7 @@ router.get('/payment/unverifiedtrans',authenticateAdmin,async(req,res)=>{
 })
 
 async function createUser(req, res) {
+    console.log('yes')
     const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber"];
     const finalBody = {};
     validFields.forEach(field => {
@@ -109,6 +111,7 @@ async function createUser(req, res) {
         sendWelcomeEmail(user);
         res.status(201).send({ user, token });
     } catch (error) {
+        console.log(error)
         res.status(400).send(error);
     }
 }
@@ -255,7 +258,7 @@ router.patch('/:id', authenticateAdmin, async (req, res) => {
 
 router.patch('/forget/:token', async (req, res) => {
     try {
-        const decodedEmail = jwt.verify(req.params.token, `${process.env.SIGN_TOKEN}`).email;
+        const decodedEmail = jwt.verify(req.params.token, SIGN_TOKEN).email;
         const user = await User.findOne({ email: decodedEmail, 'forgotTokens.forgotToken': req.params.token });
         if (!user) {
             res.status(404).send({message:'User Not Found!'});
@@ -358,7 +361,7 @@ async function initPayment(user, workshops,workshopsIds, discountCode, res) {
         price = price / 10;
         zarinpal.PaymentRequest({
             Amount: price,
-            CallbackURL: `${process.env.FRONTURL}`+'/payment/result?order_id='+orderId+'&amount='+price,
+            CallbackURL: `${FRONTURL}`+'/payment/result?order_id='+orderId+'&amount='+price,
             Description: 'Buy Workshop'
         }).then(function (response) {
             if (response.status == 100) {
