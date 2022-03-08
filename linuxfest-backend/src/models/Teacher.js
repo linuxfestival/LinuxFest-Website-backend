@@ -16,10 +16,21 @@ const schema = mongoose.Schema({
             }
         }
     },
+    fullName_en: {
+        type: String,
+        required: true,
+        trim: true,
+    },
     description: {
         type: String
     },
+    description_en: {
+        type: String
+    },
     imagePath: {
+        type: String
+    },
+    resume: {
         type: String
     }
 }, {

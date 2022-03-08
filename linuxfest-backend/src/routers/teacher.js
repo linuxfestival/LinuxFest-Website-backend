@@ -21,7 +21,7 @@ router.post('/manage', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const validFields = ["fullName", "description"];
+        const validFields = ["fullName", "fullName_en", "description", "description_en"];
         const finalBody = {};
         validFields.forEach(field => {
             finalBody[field] = req.body[field];
@@ -86,7 +86,7 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).send();
         }
 
-        const validUpdates = ['fullName', 'description'];
+        const validUpdates = ['fullName', 'fullName_en', 'description', 'description_en'];
         const updates = Object.keys(req.body);
         const isValidOperation = validUpdates.every((update) => updates.includes(update));
 
@@ -195,6 +195,57 @@ router.delete('/manage/pic/:id', authenticateAdmin, async (req, res) => {
     }
 });
 
+
+const uploadResume = multer({
+    limits: {
+        fileSize: 10000000
+    },
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(pdf)$/)) {
+            cb(new Error('لطفا فایل پی‌دی‌اف را آپلود نمایید'));
+        }
+        cb(undefined, true);
+    }
+});
+
+router.post('/manage/resume/:id', authenticateAdmin, uploadResume.single('mainPic'), async (req, res) => {
+    if (!checkPermission(req.admin, 'editTeacher', res)) {
+        return res.status(403).end();
+    }
+    try {
+        const teacher = await Teacher.findById(req.params.id);
+        if (!teacher) {
+            return res.status(404).send();
+        }
+
+        const dirPath = path.join(UPLOAD_PATH, "teachers", req.params.id);
+        if (!fs.existsSync(dirPath)) {
+            fs.mkdirSync(dirPath, { recursive: true }, (err) => {
+                if (err) {
+                    throw new Error(err);
+                }
+            });
+        }
+        const filePath = path.join(dirPath, "resume.pdf")
+        fs.writeFileSync(filePath, req.file.buffer, (err) => {
+            if (err) {
+                throw new Error(err);
+            }
+        });
+
+        teacher.resume = filePath
+        await teacher.save();
+
+        return res.status(200).send(teacher);
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send({ error: error.message });
+    }
+}, (err, req, res) => {
+    res.status(400).send({ error: err.message });
+});
+
+
 // *********************** ordinary routes ****************** //
 
 router.get('/', async(req,res)=>{
@@ -213,7 +264,6 @@ router.get('/', async(req,res)=>{
     } catch (err) {
         return res.status(400).send({ error: err.message });
     }
-
 })
 
 router.get('/pic/:id', async(req,res)=>{
@@ -232,6 +282,22 @@ router.get('/pic/:id', async(req,res)=>{
     }
 })
 
+
+router.get('/resume/:id', async(req,res)=>{
+    try{
+        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "resume.pdf");
+        if (fs.existsSync(filePath))
+        {
+            return res.status(200).sendFile(filePath);
+        }
+        else
+        {
+            return res.status(404).send({message:"File Not Found"})
+        }
+    }catch(error){
+        return res.status(400).send({message:"Internal error"})
+    }
+})
 
 
 module.exports = router;
