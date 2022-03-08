@@ -1,5 +1,6 @@
 
 require("dotenv").config();
+const path = require('path');
 
 module.exports = {
     BASEURL: process.env.BASEURL,
@@ -14,5 +15,7 @@ module.exports = {
     MAILUSER: process.env.MAILUSER,
     MAILPASS: process.env.MAILPASS,
     ZARIN: process.env.ZARIN,
-    RANDOM: parseInt(process.env.RANDOM)
+    RANDOM: parseInt(process.env.RANDOM),
+    workingDir: process.env.PWD,
+    UPLOAD_PATH: path.join(process.env.PWD, "uploads",  process.env.SITE_VERSION)
 }
