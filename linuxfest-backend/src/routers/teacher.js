@@ -5,6 +5,7 @@ const multer = require('multer');
 const sharp = require('sharp');
 
 const Teacher = require('../models/Teacher');
+const Workshop = require('../models/Workshop');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 const { UPLOAD_PATH } = require('./../config/index.js');
@@ -12,7 +13,9 @@ const { UPLOAD_PATH } = require('./../config/index.js');
 
 const router = new express.Router();
 
-router.post('/', authenticateAdmin, async (req, res) => {
+// *************************** Mangement routes ******************** // 
+
+router.post('/manage', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'addTeacher', res)) {
             return;
@@ -25,17 +28,17 @@ router.post('/', authenticateAdmin, async (req, res) => {
         });
         const teacher = new Teacher(finalBody);
         await teacher.save();
-        res.send(teacher);
+        return res.send(teacher);
 
     } catch (err) {
-        res.status(400).send({ error: err.message });
+        return res.status(400).send({ error: err.message });
     }
 });
 
-router.get('/', authenticateAdmin, async (req, res) => {
+router.get('/manage', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getTeacher', res)) {
-            return;
+            return res.status(403).end();
         }
         const teachers = await Teacher.find({});
 
@@ -48,72 +51,69 @@ router.get('/', authenticateAdmin, async (req, res) => {
             });
         }
 
-        res.send(result);
+        return res.send(result);
     } catch (err) {
-        res.status(400).send({ error: err.message });
+        return res.status(400).send({ error: err.message });
     }
 });
 
 router.get('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'getTeacher', res)) {
-            return;
+            return res.status(403).end();
         }
         const teacher = await Teacher.findById(req.params.id);
 
         if (!teacher) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         await teacher.populate('workshops').execPopulate();
 
-        res.send({ teacher, workshops: teacher.workshops });
+        return res.send({ teacher, workshops: teacher.workshops });
     } catch (err) {
-        res.status(400).send({ error: err.message });
+        return res.status(400).send({ error: err.message });
     }
 })
 
 router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'editTeacher', res)) {
-            return;
+            return res.status(403).end();
         }
         const teacher = await Teacher.findById(req.params.id);
 
         if (!teacher) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         const validUpdates = ['fullName', 'description'];
         const updates = Object.keys(req.body);
-        const isValidOperation = updates.every((update) => validUpdates.includes(update));
+        const isValidOperation = validUpdates.every((update) => updates.includes(update));
 
         if (!isValidOperation) {
-            res.status(400).send({ error: 'Invalid updates' });
+            return res.status(400).send({ error: 'Invalid updates' });
         }
-        updates.forEach(update => teacher[update] = req.body[update]);
+        validUpdates.forEach(update => teacher[update] = req.body[update]);
         await teacher.save();
-        res.send(teacher);
+        return res.send(teacher);
     } catch (err) {
-        res.status(400).send({ error: err.message });
+        return res.status(400).send({ error: err.message });
     }
 });
 
 router.delete('/manage/:id', authenticateAdmin, async (req, res) => {
     try {
         if (!checkPermission(req.admin, 'deleteTeacher', res)) {
-            return;
+            return res.status(403).end();
         }
         const teacher = await Teacher.findById(req.params.id);
         if (!teacher) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         await Teacher.deleteOne(teacher);
-        res.status(204).end()
+        return res.status(204).end()
     } catch (err) {
-        res.status(400).send({ error: err.message });
+        return res.status(400).send({ error: err.message });
     }
 })
 
@@ -131,32 +131,14 @@ const upload = multer({
 });
 
 
-router.get('/pic/:id',async(req,res)=>{
-    try{
-        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
-        if (fs.existsSync(filePath))
-        {
-            res.status(200).sendFile(filePath);
-        }
-        else
-        {
-            res.status(404).send({message:"File Not Found"})
-        }
-    }catch(error){
-        res.status(400).send({message:"Internal error"})
-    }
-})
-
-
-router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
+router.post('/manage/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req, res) => {
     if (!checkPermission(req.admin, 'editTeacher', res)) {
-        return;
+        return res.status(403).end();
     }
     try {
         const teacher = await Teacher.findById(req.params.id);
         if (!teacher) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
 
         const buffer = await sharp(req.file.buffer).png().toBuffer();
@@ -177,26 +159,25 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
         teacher.imagePath = path.join(filePath, "mainPic.png")
         await teacher.save();
 
-        res.status(200).send(teacher);
+        return res.status(200).send(teacher);
     } catch (error) {
         console.log(error)
-        res.status(500).send({ error: error.message });
+        return res.status(500).send({ error: error.message });
     }
 }, (err, req, res) => {
     res.status(400).send({ error: err.message });
 });
 
-router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
+router.delete('/manage/pic/:id', authenticateAdmin, async (req, res) => {
     if (!checkPermission(req.admin, 'editTeacher', res)) {
-        return;
+        return res.status(403).end();
     }
 
     try {
         const teacher = await Teacher.findById(req.params.id);
 
         if (!teacher || !teacher.imagePath) {
-            res.status(404).send();
-            return;
+            return res.status(404).send();
         }
         const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
         fs.unlink(filePath, (err) => {
@@ -208,10 +189,49 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
         teacher.imagePath = '';
         await teacher.save();
 
-        res.send(teacher);
+        return res.send(teacher);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
+
+// *********************** ordinary routes ****************** //
+
+router.get('/', async(req,res)=>{
+    try {
+        const teachers = await Teacher.find({});
+
+        let result = [];
+        for (const teacher of teachers) {
+            const workshops = await Workshop.find({'teachers.id':{ $in: [teacher.id]}})
+            result = result.concat({
+                teacher,
+                workshops: workshops
+            });
+        }
+        return res.status(200).send(result);
+    } catch (err) {
+        return res.status(400).send({ error: err.message });
+    }
+
+})
+
+router.get('/pic/:id', async(req,res)=>{
+    try{
+        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
+        if (fs.existsSync(filePath))
+        {
+            return res.status(200).sendFile(filePath);
+        }
+        else
+        {
+            return res.status(404).send({message:"File Not Found"})
+        }
+    }catch(error){
+        return res.status(400).send({message:"Internal error"})
+    }
+})
+
+
 
 module.exports = router;
