@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "dev": "env-cmd -f ./src/.env.dev nodemon ./src/index.js",
+    "dev": "env-cmd -f ./.env.dev nodemon ./src/index.js",
     "dev_db": "..\\mongodb\\bin\\mongod.exe --dbpath ..\\mongodb-data",
-    "start": "env-cmd -f ./src/.env.dev node ./src/index.js"
+    "start": "env-cmd -f ./.env.dev node ./src/index.js"
   },
   "devDependencies": {
     "env-cmd": "^10.0.1",
