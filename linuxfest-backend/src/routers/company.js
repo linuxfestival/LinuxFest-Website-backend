@@ -6,7 +6,7 @@ const fs = require('fs');
 const Company = require('../models/Company');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
-const { SITE_VERSION } = require('./../config/index.js');
+const { UPLOAD_PATH } = require('./../config/index.js');
 
 const router = new express.Router();
 
@@ -206,16 +206,17 @@ const upload = multer({
 
 router.get('/pic/:id',async(req,res)=>{
     try{
-        if (fs.existsSync(".."+"/uploads/"+SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"))
+        const filePath = path.join(UPLOAD_PATH, "companies", req.params.id, "companyLogo.png")
+        if (fs.existsSync(filePath))
         {
-            res.status(200).sendFile(path.join(__dirname, '../..'+ "/uploads/"+SITE_VERSION+"/companies/"+req.params.id+"/companyLogo.png"));
+            return res.status(200).sendFile(filePath);
         }
         else
         {
-            res.status(404).send({message:"File Not Found"})
+            return res.status(404).send({message:"File Not Found"})
         }
     }catch(error){
-        res.status(400).send({message:"Internal error"})
+        return res.status(400).send({message:"Internal error"})
     }
 })
 
@@ -231,7 +232,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('companyLogo'), async (
         }
 
         const buffer = await sharp(req.file.buffer).png().toBuffer();
-        const filePath = path.resolve(path.join("../uploads", `${SITE_VERSION}`, "companies", req.params.id));
+        const filePath = path.join(UPLOAD_PATH, "companies", req.params.id);
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -270,8 +271,8 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
             res.status(404).send({message:"Not Found"});
             return;
         }
-
-        fs.unlink(path.resolve(path.join("../uploads", SITE_VERSION, "companies", req.params.id, "companyLogo.png")), (err) => {
+        const filePath = path.join(UPLOAD_PATH, "companies", req.params.id, "companyLogo.png");
+        fs.unlink(filePath, (err) => {
             if (err) {
                 console.log(err);
             }
@@ -280,9 +281,9 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
         company.logo = '';
         await company.save();
 
-        res.send(company);
+        return res.send(company);
     } catch (err) {
-        res.status(500).send({ error: err.message });
+        return res.status(500).send({ error: err.message });
     }
 });
 

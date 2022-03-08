@@ -7,7 +7,8 @@ const sharp = require('sharp');
 const Teacher = require('../models/Teacher');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
-const { SITE_VERSION } = require('./../config/index.js');
+const { UPLOAD_PATH } = require('./../config/index.js');
+
 
 const router = new express.Router();
 
@@ -132,8 +133,7 @@ const upload = multer({
 
 router.get('/pic/:id',async(req,res)=>{
     try{
-        const filePath = path.resolve(path.join("../uploads", `${SITE_VERSION}`, "teachers", req.params.id, "mainPic.png"));
-
+        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
         if (fs.existsSync(filePath))
         {
             res.status(200).sendFile(filePath);
@@ -160,7 +160,7 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
         }
 
         const buffer = await sharp(req.file.buffer).png().toBuffer();
-        const filePath = path.resolve(path.join("../uploads", `${SITE_VERSION}`, "teachers", req.params.id));
+        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id);
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
                 if (err) {
@@ -198,8 +198,8 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
             res.status(404).send();
             return;
         }
-
-        fs.unlink(path.resolve(path.join("../uploads", `${SITE_VERSION}`, "teachers", req.params.id, "mainPic.png")), (err) => {
+        const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
+        fs.unlink(filePath, (err) => {
             if (err) {
                 console.log(err);
             }
