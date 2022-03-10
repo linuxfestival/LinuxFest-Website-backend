@@ -21,7 +21,7 @@ router.post('/manage', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const validFields = ["fullName", "fullName_en", "description", "description_en"];
+        const validFields = ["fullName", "fullName_en", "description", "description_en", "affiliation", "affiliation_fa", "field", "field_fa"];
         const finalBody = {};
         validFields.forEach(field => {
             finalBody[field] = req.body[field];
@@ -86,7 +86,7 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).send();
         }
 
-        const validUpdates = ['fullName', 'fullName_en', 'description', 'description_en'];
+        const validUpdates =  ["fullName", "fullName_en", "description", "description_en", "affiliation", "affiliation_fa", "field", "field_fa"];
         const updates = Object.keys(req.body);
         const isValidOperation = validUpdates.every((update) => updates.includes(update));
 

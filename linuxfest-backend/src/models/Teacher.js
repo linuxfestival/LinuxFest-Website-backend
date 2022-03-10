@@ -21,6 +21,18 @@ const schema = mongoose.Schema({
         required: true,
         trim: true,
     },
+    affiliation: {
+        type: String
+    },
+    affiliation_en: {
+        type: String
+    },
+    field: {
+        type: String
+    },
+    field_en: {
+        type: String
+    },
     description: {
         type: String
     },
