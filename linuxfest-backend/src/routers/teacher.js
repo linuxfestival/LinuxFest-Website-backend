@@ -288,7 +288,7 @@ router.get('/resume/:id', async(req,res)=>{
         const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "resume.pdf");
         if (fs.existsSync(filePath))
         {
-            return res.status(200).sendFile(filePath);
+            return res.download(filePath);
         }
         else
         {
