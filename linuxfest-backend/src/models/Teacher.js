@@ -65,6 +65,12 @@ schema.methods.toJSON = function () {
         teacherObject.picUrl = url;
     }
 
+    const resume_url = `/${BASEURL}/teachers/resume/${teacherObject._id}`;
+    if (teacherObject.resume) {
+        delete teacherObject.imagePath;
+        teacherObject.resume = resume_url;
+    }
+
     return teacherObject;
 };
 
