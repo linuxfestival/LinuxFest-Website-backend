@@ -11,9 +11,9 @@
   },
   "devDependencies": {
     "env-cmd": "^10.0.1",
-    "eslint": "^6.6.0",
-    "jest": "^24.9.0",
-    "nodemon": "^1.19.3"
+    "eslint": "^8.10.0",
+    "jest": "^27.5.1",
+    "nodemon": "^2.0.15"
   },
   "dependencies": {
     "acorn": "^7.4.1",
@@ -27,9 +27,9 @@
     "mongoose": "^5.11.14",
     "multer": "^1.4.2",
     "nodemailer": "^6.7.2",
-    "persianize": "^2.0.0",
-    "sharp": "^0.23.4",
-    "validator": "^11.1.0",
+    "persianize": "^1.0.2",
+    "sharp": "^0.30.2",
+    "validator": "^13.7.0",
     "winston": "^3.6.0",
     "zarinpal-checkout": "^0.2.7"
   },
