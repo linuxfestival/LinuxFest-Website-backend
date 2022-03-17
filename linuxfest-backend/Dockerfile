@@ -1,12 +1,12 @@
-FROM node-14.7.0:alpine
+FROM node:16.10.0-alpine
 
 WORKDIR /app
 COPY package.json .
 
 ARG NODE_ENV
-RUN if [ "$NODE_ENV" = "development" ]; \
-        then npm install; \
-        else npm install --only=production; \
+RUN if [ "$NODE_ENV" = "production" ]; \
+        then npm install --only=production; \
+        else npm install; \
         fi
 
 COPY . ./
@@ -14,4 +14,3 @@ COPY . ./
 
 ENV PORT 5000
 EXPOSE $PORT
-CMD ["node", "index.js"]
