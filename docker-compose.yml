@@ -4,9 +4,9 @@ services:
   nginx:
     container_name: nginx
     ports:
-      - "89:80"
+      - "80:80"
     build:
-      context: ./../nginx/
+      context: ./nginx/
     networks:
       - nginx-net
     depends_on:
@@ -15,7 +15,7 @@ services:
   node-app:
     container_name: node-app
     build:
-      context: ./linuxfest-backend/
+      context: ./backend/linuxfest-backend/
       args:
         NODE_ENV: production
     volumes:
@@ -26,7 +26,7 @@ services:
       - MONGO_PASSWORD=${MONGO_PASSWORD}
       - PWD=/app
     env_file:
-      - ./linuxfest-backend/.env.dev
+      - ./backend/linuxfest-backend/.env.dev
     networks:
       - api-net
       - nginx-net
