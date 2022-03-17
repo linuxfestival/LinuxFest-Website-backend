@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
+const Jimp = require('jimp');
 const mongoose = require('mongoose');
 
 const Workshop = require('../models/Workshop');
@@ -261,9 +262,8 @@ router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async
         }
 
         for (const file of req.files) {
-            const buffer = await sharp(file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
             const filePath = path.join(UPLOAD_PATH, "workshops", req.params.id, "album");
-
+            
             if (!fs.existsSync(filePath)) {
                 fs.mkdirSync(filePath, { recursive: true }, (err) => {
                     if (err) {
@@ -273,15 +273,23 @@ router.post('/pic/album/:id', authenticateAdmin, upload.array('pictures'), async
             }
 
             const picId = new mongoose.Types.ObjectId();
-            fs.writeFileSync(path.join(filePath, picId.toHexString() + ".png"), buffer, (err) => {
-                if (err) {
-                    throw new Error(err);
-                }
-            });
+
+            const image = await Jimp.read(file.buffer).resize(1280, 960)
+            
+            const imagePath = path.join(filePath, picId.toHexString() + ".png")
+            await image.writeAsync(imagePath); // Returns Promise
+            
+            
+            // const buffer = await sharp(file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
+            // fs.writeFileSync(path.join(filePath, picId.toHexString() + ".png"), buffer, (err) => {
+                //     if (err) {
+                    //         throw new Error(err);
+                    //     }
+                    // });
 
             workshop.album = workshop.album.concat({
                 _id: picId,
-                albumPicPath: path.join(filePath, picId.toHexString() + ".png")
+                albumPicPath: imagePath
             });
         }
 
@@ -333,7 +341,6 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
             return res.status(404).send();
         }
 
-        const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
         const filePath = path.join(UPLOAD_PATH, "workshops", req.params.id);
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
@@ -342,13 +349,19 @@ router.post('/pic/:id', authenticateAdmin, upload.single('mainPic'), async (req,
                 }
             });
         }
-        fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
-            if (err) {
-                throw new Error(err);
-            }
-        });
 
-        workshop.picPath = path.join(filePath, "mainPic.png");
+        // const buffer = await sharp(req.file.buffer).resize({ width: 1280, height: 960 }).png().toBuffer();
+        // fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
+        //     if (err) {
+        //         throw new Error(err);
+        //     }
+        // });
+
+        const image = await Jimp.read(req.file.buffer).resize(1280, 960)
+        const imagePath = path.join(filePath, "mainPic.png")
+        await image.writeAsync(imagePath); // Returns Promise
+
+        workshop.picPath = imagePath;
         await workshop.save();
 
         return res.send(workshop);

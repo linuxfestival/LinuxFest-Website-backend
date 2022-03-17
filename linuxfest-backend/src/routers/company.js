@@ -2,6 +2,8 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const sharp = require('sharp');
+const Jimp = require('jimp');
+
 const fs = require('fs');
 const Company = require('../models/Company');
 const { checkPermission } = require('../utils/utils');
@@ -231,7 +233,6 @@ router.post('/pic/:id', authenticateAdmin, upload.single('companyLogo'), async (
             return;
         }
 
-        const buffer = await sharp(req.file.buffer).png().toBuffer();
         const filePath = path.join(UPLOAD_PATH, "companies", req.params.id);
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
@@ -240,13 +241,20 @@ router.post('/pic/:id', authenticateAdmin, upload.single('companyLogo'), async (
                 }
             });
         }
-        fs.writeFileSync(path.join(filePath, "companyLogo.png"), buffer, (err) => {
-            if (err) {
-                throw new Error(err);
-            }
-        });
 
-        company.logo = path.join(filePath, "companyLogo.png")
+        // const buffer = await sharp(req.file.buffer).png().toBuffer();
+        // fs.writeFileSync(path.join(filePath, "companyLogo.png"), buffer, (err) => {
+        //     if (err) {
+        //         throw new Error(err);
+        //     }
+        // });
+
+        const image = await Jimp.read(req.file.buffer)
+            
+        const imagePath = path.join(filePath, "companyLogo.png")
+        await image.writeAsync(imagePath); // Returns Promise
+
+        company.logo = imagePath
         await company.save();
 
         res.status(200).send(company);

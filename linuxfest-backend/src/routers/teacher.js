@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
+const Jimp = require('jimp');
 
 const Teacher = require('../models/Teacher');
 const Workshop = require('../models/Workshop');
@@ -85,11 +86,11 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
         if (!teacher) {
             return res.status(404).send();
         }
-        const validUpdates =  ["fullName", "fullName_en", "description", "description_en", "affiliation", "affiliation_en", "degree", "degree_en", "lecture_title", "lecture_title_en", "lecture_abstract", "lecture_abstract_en"];
+        const validUpdates = ["fullName", "fullName_en", "description", "description_en", "affiliation", "affiliation_en", "degree", "degree_en", "lecture_title", "lecture_title_en", "lecture_abstract", "lecture_abstract_en"];
         const updates = Object.keys(req.body);
         console.log(updates)
         const isValidOperation = validUpdates.every((update) => updates.includes(update));
-        
+
         if (!isValidOperation) {
             return res.status(400).send({ error: 'Invalid updates' });
         }
@@ -141,7 +142,6 @@ router.post('/manage/pic/:id', authenticateAdmin, upload.single('mainPic'), asyn
             return res.status(404).send();
         }
 
-        const buffer = await sharp(req.file.buffer).png().toBuffer();
         const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id);
         if (!fs.existsSync(filePath)) {
             fs.mkdirSync(filePath, { recursive: true }, (err) => {
@@ -150,15 +150,15 @@ router.post('/manage/pic/:id', authenticateAdmin, upload.single('mainPic'), asyn
                 }
             });
         }
-        fs.writeFileSync(path.join(filePath, "mainPic.png"), buffer, (err) => {
-            if (err) {
-                throw new Error(err);
-            }
-        });
 
-        teacher.imagePath = path.join(filePath, "mainPic.png")
+        const image = await Jimp.read(req.file.buffer)
+
+        const imagePath = path.join(filePath, "mainPic.png")
+        await image.writeAsync(imagePath); // Returns Promise
+
+        teacher.imagePath = imagePath
+
         await teacher.save();
-
         return res.status(200).send(teacher);
     } catch (error) {
         console.log(error)
@@ -248,13 +248,13 @@ router.post('/manage/resume/:id', authenticateAdmin, uploadResume.single('mainPi
 
 // *********************** ordinary routes ****************** //
 
-router.get('/', async(req,res)=>{
+router.get('/', async (req, res) => {
     try {
         const teachers = await Teacher.find({});
 
         let result = [];
         for (const teacher of teachers) {
-            const workshops = await Workshop.find({'teachers.id':{ $in: [teacher.id]}})
+            const workshops = await Workshop.find({ 'teachers.id': { $in: [teacher.id] } })
             result = result.concat({
                 teacher,
                 workshops: workshops
@@ -266,36 +266,32 @@ router.get('/', async(req,res)=>{
     }
 })
 
-router.get('/pic/:id', async(req,res)=>{
-    try{
+router.get('/pic/:id', async (req, res) => {
+    try {
         const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "mainPic.png");
-        if (fs.existsSync(filePath))
-        {
+        if (fs.existsSync(filePath)) {
             return res.status(200).sendFile(filePath);
         }
-        else
-        {
-            return res.status(404).send({message:"File Not Found"})
+        else {
+            return res.status(404).send({ message: "File Not Found" })
         }
-    }catch(error){
-        return res.status(400).send({message:"Internal error"})
+    } catch (error) {
+        return res.status(400).send({ message: "Internal error" })
     }
 })
 
 
-router.get('/resume/:id', async(req,res)=>{
-    try{
+router.get('/resume/:id', async (req, res) => {
+    try {
         const filePath = path.join(UPLOAD_PATH, "teachers", req.params.id, "resume.pdf");
-        if (fs.existsSync(filePath))
-        {
+        if (fs.existsSync(filePath)) {
             return res.download(filePath);
         }
-        else
-        {
-            return res.status(404).send({message:"File Not Found"})
+        else {
+            return res.status(404).send({ message: "File Not Found" })
         }
-    }catch(error){
-        return res.status(400).send({message:"Internal error"})
+    } catch (error) {
+        return res.status(400).send({ message: "Internal error" })
     }
 })
 
