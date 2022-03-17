@@ -4,9 +4,7 @@ const { ALLOWED_HOSTS, BASEURL } = require('./config/index.js');
 
 const app = express();
 
-app.use(cors({
-    origin: ALLOWED_HOSTS
-}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
