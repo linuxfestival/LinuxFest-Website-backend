@@ -1,28 +1,19 @@
 version: "3"
 
-# Set env file to be accessible inside docker-compose
-env_file: ./linuxfest-backend/.env.dev
-
 services:
   nginx:
     container_name: nginx
     ports:
-      - "80:80"
+      - "89:80"
     build:
-      context: ./nginx
+      context: ./../nginx/
     networks:
       - nginx-net
     depends_on:
       - node-app
 
   node-app:
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: any
-      update_config:
-        parallelism: 2
-        delay: 15s
+    container_name: node-app
     build:
       context: ./linuxfest-backend/
       args:
@@ -41,7 +32,7 @@ services:
       - nginx-net
     depends_on:
       - mongo
-    command: node index.js
+    command: node ./src/index.js
 
   mongo:
     image: mongo
