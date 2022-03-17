@@ -27,16 +27,28 @@ const schema = mongoose.Schema({
     affiliation_en: {
         type: String
     },
-    field: {
+    degree: {
         type: String
     },
-    field_en: {
+    degree_en: {
         type: String
     },
     description: {
         type: String
     },
     description_en: {
+        type: String
+    },
+    lecture_title: {
+        type: String
+    },
+    lecture_title_en: {
+        type: String
+    },
+    lecture_abstract: {
+        type: String
+    },
+    lecture_abstract_en: {
         type: String
     },
     imagePath: {
