@@ -22,6 +22,5 @@ NOTE: Rename .env.dev.test to .env.dev and also .env.db.test to .env.db
 And to build and create a container run these lines:
 ```
 docker-compose --env-file ./backend/linuxfest-backend/.env.db -f docker-compose.yml build
-docker-compose --env-file ./backend/linuxfest-
-/.env.db -f docker-compose.yml up -d
+docker-compose --env-file ./backend/linuxfest-backend/.env.db -f docker-compose.yml up -d
 ```
