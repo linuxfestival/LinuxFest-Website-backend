@@ -37,6 +37,9 @@ const schema = mongoose.Schema({
         type: String,
         required: true
     },
+    prerequisites: {
+        type: String,
+    },
     times: [{
         startTime: {
             type: Date,
