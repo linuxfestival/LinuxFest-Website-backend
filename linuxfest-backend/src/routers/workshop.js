@@ -73,8 +73,7 @@ router.get("/manage", authenticateAdmin, async (req, res) => {
 
 
 router.get("/manage/dump", authenticateAdmin, async (req, res) => {
-    console.log("haaaaaaaaa")
-    console.log("haaaaaaaaa===============")
+
     try {
         if (!checkPermission(req.admin, 'getWorkshop', res)) {
             return;
