@@ -4,6 +4,9 @@ const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
 const Jimp = require('jimp');
+const { format } = require('@fast-csv/format');
+const archiver = require('archiver');
+
 const mongoose = require('mongoose');
 
 const Workshop = require('../models/Workshop');
@@ -11,7 +14,7 @@ const Teacher = require('../models/Teacher');
 const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
-const { SITE_VERSION, UPLOAD_PATH } = require('./../config/index.js')
+const { SITE_VERSION, UPLOAD_PATH, workingDir } = require('./../config/index.js')
 
 
 const router = new express.Router();
@@ -63,6 +66,70 @@ router.get("/manage", authenticateAdmin, async (req, res) => {
         }
 
         return res.send(result);
+    } catch (err) {
+        return res.status(500).send({ error: err.message });
+    }
+});
+
+
+router.get("/manage/dump", authenticateAdmin, async (req, res) => {
+    console.log("haaaaaaaaa")
+    console.log("haaaaaaaaa===============")
+    try {
+        if (!checkPermission(req.admin, 'getWorkshop', res)) {
+            return;
+        }
+        const workshops = await Workshop.find({});
+
+        const dump_dir = path.join(workingDir, "workshop_dump");
+        console.log(dump_dir)
+        if (fs.existsSync(dump_dir)){
+            console.log("dump exists. try to rm folder");
+            fs.rmdirSync(dump_dir, { recursive: true });
+        }
+        console.log("create new workshop_dump dir");
+        fs.mkdirSync(dump_dir);
+
+
+        for (const workshop of workshops) {
+            await workshop.populate('participants').execPopulate();            
+
+            console.log(workshop.title)
+            const file_name = workshop.title + "_" + workshop._id + '.csv';
+            const fileName = path.join(dump_dir, file_name);
+            const csvFile = fs.createWriteStream(fileName);
+            
+            const stream = format({ headers:true });
+            stream.pipe(csvFile);
+            
+            let participants =  workshop.participants;
+            let res = [];
+            for(let i=0; i<participants.length; i++) {
+                res.push({
+                firstName: participants[i].firstName,
+                lastName: participants[i].lastName,
+                email: participants[i].email,
+                phoneNumber: participants[i].phoneNumber
+                });
+                stream.write(res[i]);
+            }
+            stream.end();
+        }
+
+
+        res.writeHead(200, {
+            'Content-Type': 'application/zip',
+            'Content-disposition': 'attachment; filename=workshopDump.zip'
+        });
+    
+        var zip = archiver('zip');
+    
+        // Send the file to the page output.
+        zip.pipe(res);
+    
+        zip.directory(dump_dir, 'dump')
+           .finalize();
+
     } catch (err) {
         return res.status(500).send({ error: err.message });
     }
