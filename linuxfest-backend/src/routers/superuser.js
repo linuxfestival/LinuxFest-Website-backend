@@ -254,7 +254,8 @@ router.post('/mailit',authenticateAdmin,async (req,res)=>{
   start().then(()=>{
     res.send(emails)
   }).catch((err)=>{
-      res.status(500).send("Something is wrong with mails")
+      console.log(err)
+      res.status(500).send(`Something is wrong with mails - ${err}`)
   });
 })
 
