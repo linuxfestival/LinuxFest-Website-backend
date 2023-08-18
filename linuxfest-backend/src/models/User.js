@@ -90,6 +90,11 @@ const schema = new mongoose.Schema({
       }
     }
   ],
+  level: {
+    type: String,
+    required: true,
+    enum: ['beginner', 'intermediate', 'advanced']
+  },
   workshops: [{
     workshop: {
       type: mongoose.Types.ObjectId,
