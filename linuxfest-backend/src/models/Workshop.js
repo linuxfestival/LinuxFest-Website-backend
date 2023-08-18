@@ -21,6 +21,11 @@ const schema = mongoose.Schema({
         type: Number,
         required: true
     },
+    difficulty: {
+        type: String,
+        required: true,
+        enum: ['beginner', 'intermediate', 'advanced']
+    },
     isRegOpen: {
         type: Boolean,
         default: false
@@ -58,7 +63,10 @@ const schema = mongoose.Schema({
         name: {
             type: String,
         }
-    }]
+    }],
+    recommended: {
+        type: Boolean
+    }
 });
 
 schema.virtual('participants', {
