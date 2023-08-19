@@ -15,7 +15,7 @@ const User = require('../models/User');
 const { checkPermission } = require('../utils/utils');
 const { authenticateAdmin } = require('../express_middlewares/adminAuth');
 const { SITE_VERSION, UPLOAD_PATH, workingDir } = require('./../config/index.js')
-
+const userAuth = require('./../express_middlewares/userAuth.js');
 
 const router = new express.Router();
 
@@ -464,5 +464,28 @@ router.delete('/pic/:id', authenticateAdmin, async (req, res) => {
         return res.status(500).send({ error: err.message });
     }
 });
+
+
+router.get('/getbydiff', userAuth ,async(req,res) => {
+    try {
+        const workshops = await Workshop.find({difficulty:req.user.level});
+        if (!workshops) {
+            return res.status(404).send("there is no workshops with this difficulty");
+        }
+        return res.send(workshops);
+    } catch (error) {
+        return res.status(500).send({ error: error.message });
+    }
+});
+
+router.get('/getrecommendeds', async(req, res) => {
+    try {
+        const workshops_recommended = await workshop.find({recommended: true});
+        return res.send({workshops_recommended});
+    } catch (error) {
+        return res.status(500).send({error: error.message});
+    }
+})
+
 
 module.exports = router;
