@@ -480,7 +480,7 @@ router.get('/getbydiff', userAuth ,async(req,res) => {
 
 router.get('/getrecommendeds', async(req, res) => {
     try {
-        const workshops_recommended = await workshop.find({recommended: true});
+        const workshops_recommended = await Workshop.find({recommended: true}); 
         return res.send({workshops_recommended});
     } catch (error) {
         return res.status(500).send({error: error.message});
