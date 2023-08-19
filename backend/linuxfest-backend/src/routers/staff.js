@@ -52,10 +52,12 @@ router.post("/manage", authenticateAdmin, async (req, res) => {
     }
 
     const validFields = [
-      "fullName",
-      "fullName_en",
+      "firstname",
+      "firstname_en",
+      "lastname",
+      "lastname_en",
       "responsibility",
-      "responsibility_en",
+      "description",
     ];
     const finalBody = {};
     validFields.forEach((field) => {
@@ -125,10 +127,12 @@ router.patch("/manage/:id", authenticateAdmin, async (req, res) => {
       return res.status(404).send();
     }
     const validUpdates = [
-      "fullName",
-      "fullName_en",
+      "firstname",
+      "firstname_en",
+      "lastname",
+      "lastname_en",
       "responsibility",
-      "responsibility_en",
+      "description",
     ];
 
     const updates = Object.keys(req.body);
@@ -194,7 +198,7 @@ router.post(
       const imagePath = path.join(filePath, "mainPic.png");
       await image.writeAsync(imagePath); // Returns Promise
 
-      staff.imagePath = imagePath;
+      staff.picPath = imagePath;
 
       await staff.save();
       return res.status(200).send(staff);
@@ -217,7 +221,7 @@ router.delete("/manage/pic/:id", authenticateAdmin, async (req, res) => {
   try {
     const staff = await Staff.findById(req.params.id);
 
-    if (!staff || !staff.imagePath) {
+    if (!staff || !staff.picPath) {
       return res.status(404).send();
     }
     const filePath = path.join(
@@ -232,7 +236,7 @@ router.delete("/manage/pic/:id", authenticateAdmin, async (req, res) => {
       }
     });
 
-    staff.imagePath = "";
+    staff.picPath = "";
     await staff.save();
 
     return res.send(staff);
