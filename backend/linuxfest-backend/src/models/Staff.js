@@ -1,37 +1,43 @@
-const mongoose = require('mongoose');
-const persianize = require('persianize');
-const { BASEURL } = require('./../config/index.js')
+const mongoose = require("mongoose");
+const persianize = require("persianize");
+const { BASEURL } = require("./../config/index.js");
 
-const staffSchema = new mongoose.Schema(
+const schema = new mongoose.Schema(
   {
-    fullName: {
+    firstname: {
       type: String,
       required: true,
-      unique: true,
-      trim: true,
-      validate(values) {
-        for (const value of values.split(" ")) {
-          if (!persianize.validator().alpha(value)) {
-            throw new Error("نام معتبر نمیباشد");
-          }
+      validate(value) {
+        if (!persianize.validator().alpha(value)) {
+          throw new Error("نام معتبر نمیباشد");
         }
       },
     },
-    fullName_en: {
+    firstname_en: {
       type: String,
       required: true,
-      trim: true,
     },
-    imagePath: {
+    lastname: {
+      type: String,
+      required: true,
+      validate(value) {
+        if (!persianize.validator().alpha(value)) {
+          throw new Error("نام معتبر نمیباشد");
+        }
+      },
+    },
+    lastname_en: {
+      type: String,
+      required: true,
+    },
+    picPath: {
       type: String,
     },
     responsibility: {
       type: String,
-      required: true,
     },
-    responsibility_en: {
+    description: {
       type: String,
-      required: true,
     },
   },
   {
@@ -39,18 +45,19 @@ const staffSchema = new mongoose.Schema(
   }
 );
 
-staffSchema.methods.toJSON = function () {
+schema.methods.toJSON = function () {
   const staff = this;
   const staffObject = staff.toObject();
 
-  const url = `/${BASEURL}/staff/pic/${staffObject._id}`;
-  if (staffObject.imagePath) {
-    delete staffObject.imagePath;
+  const url = `/${BASEURL}/staffs/pic/${staffObject._id}`;
+  if (staffObject.picPath) {
+    delete staffObject.picPath;
     staffObject.picUrl = url;
   }
+
   return staffObject;
 };
 
-const Staff = mongoose.model("Staff", staffSchema);
+const Staff = mongoose.model("Staff", schema);
 
 module.exports = Staff;
