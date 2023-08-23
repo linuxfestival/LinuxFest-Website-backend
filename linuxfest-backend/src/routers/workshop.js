@@ -25,7 +25,7 @@ router.post('/', authenticateAdmin, async (req, res) => {
             return;
         }
 
-        const validFields = ["capacity", "title", "price", "isRegOpen", "description", "times", "teachers", "prerequisites"];
+        const validFields = ["capacity", "title", "price", "isRegOpen", "description", "difficulty", "times", "teachers", "prerequisites"];
         const finalBody = {};
         validFields.forEach(field => {
             finalBody[field] = req.body[field];
@@ -190,7 +190,7 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
             return res.status(404).send();
         }
 
-        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'teachers', 'price', 'times', 'prerequisites'];
+        const validUpdates = ['capacity', 'title', 'isRegOpen', 'description', 'difficulty', 'teachers', 'price', 'times', 'prerequisites'];
         const updates = Object.keys(req.body);
         if (!updates.every(element => validUpdates.includes(element))) {
             return res.status(400).send();
@@ -200,6 +200,30 @@ router.patch('/manage/:id', authenticateAdmin, async (req, res) => {
         await workshop.save()
         return res.send(workshop);
     } catch (err) {
+        return res.status(500).send({ error: err.message });
+    }
+});
+
+router.patch('/workshops/:id/recommend', authenticateAdmin, async (req, res) => {
+    const workshopId = req.params.id;
+
+    try {
+        if (!checkPermission(req.admin, 'editWorkshop', res)) {
+            return;
+        }
+
+        const workshop = await Workshop.findById(workshopId);
+        const user = await User.findById(userId);
+
+        if (!workshop || !user) {
+            return res.status(404).send();
+        }
+
+        workshop.recommended = workshop.difficulty === user.level;
+        await workshop.save();
+
+        return res.json(workshop);
+    } catch (error) {
         return res.status(500).send({ error: err.message });
     }
 });

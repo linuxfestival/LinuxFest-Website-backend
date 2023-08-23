@@ -97,7 +97,7 @@ router.get('/payment/unverifiedtrans',authenticateAdmin,async(req,res)=>{
 })
 
 async function createUser(req, res) {
-    const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber"];
+    const validFields = ["firstName", "lastName", "email", "password", "phoneNumber", "studentNumber", "level"];
     const finalBody = {};
     validFields.forEach(field => {
         finalBody[field] = req.body[field];
@@ -221,7 +221,7 @@ router.get("/:id", authenticateAdmin, async (req, res) => {
 
 async function userPatch(user, req, res, isAdmin) {
     const updates = Object.keys(req.body);
-    let allowedUpdates = ['firstName', 'lastName', 'email', 'password', 'age', 'phoneNumber'];
+    let allowedUpdates = ['firstName', 'lastName', 'email', 'password', 'age', 'phoneNumber', 'level'];
     if (isAdmin) {
         allowedUpdates += 'studentNumber';
     }
