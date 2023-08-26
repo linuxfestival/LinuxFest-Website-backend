@@ -509,7 +509,19 @@ router.get('/getrecommendeds', async(req, res) => {
     } catch (error) {
         return res.status(500).send({error: error.message});
     }
-})
+});
+
+workshoprouter.get('/recommended',userAuth, async (req, res) => {
+    try {
+        const workshops_recommended = await Workshop.find({$and: [{difficulty: req.user.level}, {recommended: true}]});
+        if (!workshops_recommended) {
+            return res.status(404).send("there is no recommended workshops for you");
+        }
+        res.send({workshops_recommended});
+    } catch (error) {
+        res.status(500).send({error: error.message});
+    }
+});
 
 
 module.exports = router;
