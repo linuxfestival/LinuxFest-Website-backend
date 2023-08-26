@@ -511,7 +511,7 @@ router.get('/getrecommendeds', async(req, res) => {
     }
 });
 
-workshoprouter.get('/recommended',userAuth, async (req, res) => {
+router.get('/recommended',userAuth, async (req, res) => {
     try {
         const workshops_recommended = await Workshop.find({$and: [{difficulty: req.user.level}, {recommended: true}]});
         if (!workshops_recommended) {
