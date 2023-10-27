@@ -35,7 +35,7 @@ services:
     command: node ./src/index.js
 
   mongo:
-    image: mongo
+    image: mongo:4.4
     container_name: mongodb
     volumes:
       - mongo-db:/data/db
