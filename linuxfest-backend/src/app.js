@@ -22,5 +22,6 @@ app.use(`/${BASEURL}/teachers`, require('./routers/teacher'));
 app.use(`/${BASEURL}/discounts`, require('./routers/discount'));
 app.use(`/${BASEURL}/statics`, require('./routers/static'));
 app.use(`/${BASEURL}/companies`, require('./routers/company'))
+app.use(`/${BASEURL}/overview`, require('./routers/files'))
 
 module.exports = app;
