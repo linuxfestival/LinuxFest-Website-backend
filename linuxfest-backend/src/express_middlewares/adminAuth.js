@@ -29,7 +29,7 @@ async function authenticateCreateAdmin(req, res, next) {
             { permission: "deleteAdmin" },
         ];
 
-        if ((await SuperUser.find()).length === 0) {
+        if ((await SuperUser.find()).length === 0) {    
             const token = req.header('Authorization').replace('Bearer ', '');
             if (token === SUPER_TOKEN_SIGN) {
                 const admin = new SuperUser({
@@ -53,7 +53,7 @@ async function authenticateCreateAdmin(req, res, next) {
             });
         }
     } catch (err) {
-        res.status(401).send({ error: err });
+        res.status(401).send({ error: err.message });
     }
 }
 async function authCheckAdmin(req) {
